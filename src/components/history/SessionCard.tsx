@@ -36,26 +36,26 @@ export default function SessionCard({ session, responses, onSelect, index }: Ses
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="w-4 h-4 text-emerald-600" />;
+        return <CheckCircle className="w-4 h-4 text-green-400" />;
       case 'active':
-        return <Play className="w-4 h-4 text-blue-600" />;
+        return <Play className="w-4 h-4 text-neon-blue" />;
       case 'paused':
-        return <Pause className="w-4 h-4 text-amber-600" />;
+        return <Pause className="w-4 h-4 text-neon-orange" />;
       default:
-        return <Clock className="w-4 h-4 text-slate-400" />;
+        return <Clock className="w-4 h-4 text-text-muted" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+        return 'bg-green-500/20 text-green-400 border-green-500/30';
       case 'active':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-neon-blue/20 text-neon-blue border-neon-blue/30';
       case 'paused':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
+        return 'bg-neon-orange/20 text-neon-orange border-neon-orange/30';
       default:
-        return 'bg-slate-100 text-slate-800 border-slate-200';
+        return 'bg-text-muted/20 text-text-muted border-text-muted/30';
     }
   };
 
@@ -80,21 +80,21 @@ export default function SessionCard({ session, responses, onSelect, index }: Ses
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
     >
-      <Card className="hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
+      <Card className="glass-morphism border-0 shadow-glass card-hover">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
            
             {/* Session Info */}
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-neon-orange to-neon-blue rounded-xl flex items-center justify-center">
                 {getStatusIcon(session.status)}
               </div>
              
               <div className="space-y-1">
-                <h3 className="font-semibold text-slate-900">
+                <h3 className="font-semibold text-text-primary">
                   Sessão #{session.id.slice(-6)}
                 </h3>
-                <div className="flex items-center gap-4 text-sm text-slate-500">
+                <div className="flex items-center gap-4 text-sm text-text-secondary">
                   <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
                     {format(new Date(session.created_date), 'dd/MM/yyyy HH:mm')}
@@ -113,7 +113,7 @@ export default function SessionCard({ session, responses, onSelect, index }: Ses
                 <Badge className={`${getStatusColor(session.status)} border mb-2`}>
                   {getStatusText(session.status)}
                 </Badge>
-                <div className="text-sm text-slate-500">
+                <div className="text-sm text-text-secondary">
                   {session.current_question}/{session.total_questions} perguntas
                 </div>
               </div>
@@ -122,7 +122,7 @@ export default function SessionCard({ session, responses, onSelect, index }: Ses
                 variant="outline"
                 size="sm"
                 onClick={() => onSelect(session)}
-                className="gap-2"
+                className="gap-2 bg-transparent border-white/20 text-text-secondary hover:border-neon-blue hover:text-neon-blue"
               >
                 <Eye className="w-4 h-4" />
                 Ver Detalhes

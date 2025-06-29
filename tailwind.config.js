@@ -4,16 +4,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Dark theme colors
+        // Dark theme colors - mais escuros
         'dark-bg': '#0a0a0f',
         'dark-surface': '#1a1a2e',
         'dark-elevated': '#16213e',
         'metallic': '#2d3748',
         'metallic-light': '#4a5568',
         
-        // Neon colors
-        'neon-orange': '#ff6b35',
-        'neon-blue': '#00d4ff',
+        // Neon colors - tons mais escuros baseados nas referências
+        'neon-orange': '#d4621a', // Tom mais escuro de laranja
+        'neon-blue': '#1a5f7a',   // Tom mais escuro de azul
         
         // Text colors
         'text-primary': '#ffffff',
@@ -27,7 +27,7 @@ export default {
           200: '#fed7aa',
           300: '#fdba74',
           400: '#fb923c',
-          500: '#ff6b35',
+          500: '#d4621a', // Laranja mais escuro
           600: '#ea580c',
           700: '#c2410c',
           800: '#9a3412',
@@ -39,7 +39,7 @@ export default {
           200: '#a5f3fc',
           300: '#67e8f9',
           400: '#22d3ee',
-          500: '#00d4ff',
+          500: '#1a5f7a', // Azul mais escuro
           600: '#0891b2',
           700: '#0e7490',
           800: '#155e75',
@@ -66,9 +66,9 @@ export default {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
         'neural-pattern': `
-          radial-gradient(circle at 20% 80%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
-          radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
-          radial-gradient(circle at 40% 40%, rgba(255, 107, 53, 0.05) 0%, transparent 50%)
+          radial-gradient(circle at 20% 80%, rgba(212, 98, 26, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, rgba(26, 95, 122, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 40% 40%, rgba(212, 98, 26, 0.05) 0%, transparent 50%)
         `,
       },
       animation: {
@@ -87,12 +87,12 @@ export default {
           '100%': { backgroundPosition: '0% 50%' },
         },
         pulseOrange: {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(255, 107, 53, 0.3)' },
-          '50%': { boxShadow: '0 0 40px rgba(255, 107, 53, 0.6)' },
+          '0%, 100%': { boxShadow: '0 0 20px rgba(212, 98, 26, 0.3)' },
+          '50%': { boxShadow: '0 0 40px rgba(212, 98, 26, 0.6)' },
         },
         pulseBlue: {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(0, 212, 255, 0.3)' },
-          '50%': { boxShadow: '0 0 40px rgba(0, 212, 255, 0.6)' },
+          '0%, 100%': { boxShadow: '0 0 20px rgba(26, 95, 122, 0.3)' },
+          '50%': { boxShadow: '0 0 40px rgba(26, 95, 122, 0.6)' },
         },
         neuralPulse: {
           '0%, 100%': { opacity: '0.3' },
@@ -107,15 +107,15 @@ export default {
           '50%': { transform: 'translateY(-20px)' },
         },
         glow: {
-          '0%': { textShadow: '0 0 10px rgba(255, 107, 53, 0.5)' },
-          '100%': { textShadow: '0 0 20px rgba(0, 212, 255, 0.8)' },
+          '0%': { textShadow: '0 0 10px rgba(212, 98, 26, 0.5)' },
+          '100%': { textShadow: '0 0 20px rgba(26, 95, 122, 0.8)' },
         },
       },
       boxShadow: {
-        'neon-orange': '0 0 20px rgba(255, 107, 53, 0.3)',
-        'neon-blue': '0 0 20px rgba(0, 212, 255, 0.3)',
-        'neon-orange-lg': '0 0 40px rgba(255, 107, 53, 0.4)',
-        'neon-blue-lg': '0 0 40px rgba(0, 212, 255, 0.4)',
+        'neon-orange': '0 0 20px rgba(212, 98, 26, 0.3)',
+        'neon-blue': '0 0 20px rgba(26, 95, 122, 0.3)',
+        'neon-orange-lg': '0 0 40px rgba(212, 98, 26, 0.4)',
+        'neon-blue-lg': '0 0 40px rgba(26, 95, 122, 0.4)',
         'metallic': '0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         'glass': '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
       },

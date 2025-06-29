@@ -2,7 +2,6 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  Brain,
   LayoutDashboard,
   Mic,
   History,
@@ -267,10 +266,18 @@ export default function Layout({ children, currentPageName }) {
             {user ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3 p-3 metallic-surface rounded-xl">
-                  <div className="w-10 h-10 bg-gradient-to-r from-neon-orange to-neon-blue rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">
-                      {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
-                    </span>
+                  <div className="w-10 h-10 bg-gradient-to-r from-neon-orange to-neon-blue rounded-full flex items-center justify-center overflow-hidden">
+                    {user.avatar_url ? (
+                      <img 
+                        src={user.avatar_url} 
+                        alt="Avatar" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-white font-semibold text-sm">
+                        {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-text-primary text-sm truncate">

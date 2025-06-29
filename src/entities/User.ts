@@ -87,18 +87,26 @@ export class User {
   }
   
   static async signInWithGoogle() {
-    // Check if Google provider is available
     try {
+      // Get the correct redirect URL based on environment
+      const redirectTo = window.location.origin + '/auth/callback'
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       })
       
       if (error) {
-        // If Google OAuth is not enabled, throw a specific error
-        if (error.message.includes('provider is not enabled') || error.message.includes('Unsupported provider')) {
+        // Check for specific Google OAuth errors
+        if (error.message.includes('provider is not enabled') || 
+            error.message.includes('Unsupported provider') ||
+            error.message.includes('validation_failed')) {
           throw new Error('GOOGLE_OAUTH_DISABLED')
         }
         throw error

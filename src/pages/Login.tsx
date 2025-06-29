@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { User } from '@/entities/User'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Rocket, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { Loader2, Rocket, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 
@@ -20,6 +20,7 @@ export default function Login({ onLogin }: LoginProps) {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const [googleAvailable, setGoogleAvailable] = useState(true)
+  const [success, setSuccess] = useState('')
 
   useEffect(() => {
     // Listen for auth state changes
@@ -44,6 +45,7 @@ export default function Login({ onLogin }: LoginProps) {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess('')
 
     try {
       if (isLogin) {
@@ -54,8 +56,9 @@ export default function Login({ onLogin }: LoginProps) {
         }
       } else {
         await User.signUp(email, password, fullName)
-        setError('Conta criada! Verifique seu email para confirmar.')
+        setSuccess('Conta criada com sucesso! Faça login para continuar.')
         setIsLogin(true)
+        setPassword('')
       }
     } catch (err: any) {
       setError(err.message || 'Erro na autenticação')
@@ -67,6 +70,7 @@ export default function Login({ onLogin }: LoginProps) {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true)
     setError('')
+    setSuccess('')
 
     try {
       await User.signInWithGoogle()
@@ -273,6 +277,7 @@ export default function Login({ onLogin }: LoginProps) {
                   onClick={() => {
                     setIsLogin(!isLogin)
                     setError('')
+                    setSuccess('')
                   }}
                   className="text-sm text-text-secondary hover:text-neon-orange transition-colors"
                 >
@@ -280,16 +285,26 @@ export default function Login({ onLogin }: LoginProps) {
                 </button>
               </div>
 
+              {/* Success Message */}
+              {success && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-sm p-4 rounded-lg border bg-green-500/20 text-green-300 border-green-500/30 flex items-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {success}
+                </motion.div>
+              )}
+
+              {/* Error Message */}
               {error && (
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className={`text-sm p-4 rounded-lg border ${
-                    error.includes('criada') 
-                      ? 'bg-green-500/20 text-green-300 border-green-500/30' 
-                      : 'bg-red-500/20 text-red-300 border-red-500/30'
-                  }`}
+                  className="text-sm p-4 rounded-lg border bg-red-500/20 text-red-300 border-red-500/30 flex items-center gap-2"
                 >
+                  <AlertCircle className="w-4 h-4" />
                   {error}
                 </motion.div>
               )}

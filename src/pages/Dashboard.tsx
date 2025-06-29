@@ -40,12 +40,12 @@ export default function Dashboard() {
      
       const userSessions = await AnalysisSession.filter(
         { user_email: currentUser.email },
-        '-created_date',
+        '-created_at',
         10
       );
       setSessions(userSessions);
 
-      const allResponses = await UserResponse.list('-created_date', 50);
+      const allResponses = await UserResponse.list('-created_at', 50);
       setResponses(allResponses);
     } catch (error) {
       console.error("Error loading dashboard data:", error);

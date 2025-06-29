@@ -22,7 +22,7 @@ export class User {
       email: user.email,
       full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
       avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
-      created_date: user.created_at,
+      created_at: user.created_at,
       last_login: new Date().toISOString(),
       total_sessions: 0,
       completed_sessions: 0,

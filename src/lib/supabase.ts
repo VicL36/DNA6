@@ -15,14 +15,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-// Database Types
+// Database Types - Updated to use created_at instead of created_date
 export interface Database {
   public: {
     Tables: {
       analysis_sessions: {
         Row: {
           id: string
-          created_date: string
+          created_at: string
           user_email: string
           status: 'active' | 'completed' | 'paused'
           current_question: number
@@ -34,7 +34,7 @@ export interface Database {
         }
         Insert: {
           id?: string
-          created_date?: string
+          created_at?: string
           user_email: string
           status?: 'active' | 'completed' | 'paused'
           current_question?: number
@@ -46,7 +46,7 @@ export interface Database {
         }
         Update: {
           id?: string
-          created_date?: string
+          created_at?: string
           user_email?: string
           status?: 'active' | 'completed' | 'paused'
           current_question?: number
@@ -60,7 +60,7 @@ export interface Database {
       user_responses: {
         Row: {
           id: string
-          created_date: string
+          created_at: string
           session_id: string
           question_index: number
           question_text: string
@@ -75,7 +75,7 @@ export interface Database {
         }
         Insert: {
           id?: string
-          created_date?: string
+          created_at?: string
           session_id: string
           question_index: number
           question_text: string
@@ -90,7 +90,7 @@ export interface Database {
         }
         Update: {
           id?: string
-          created_date?: string
+          created_at?: string
           session_id?: string
           question_index?: number
           question_text?: string
@@ -107,7 +107,7 @@ export interface Database {
       users: {
         Row: {
           id: string
-          created_date: string
+          created_at: string
           email: string
           full_name: string | null
           avatar_url: string | null
@@ -119,7 +119,7 @@ export interface Database {
         }
         Insert: {
           id?: string
-          created_date?: string
+          created_at?: string
           email: string
           full_name?: string | null
           avatar_url?: string | null
@@ -131,7 +131,7 @@ export interface Database {
         }
         Update: {
           id?: string
-          created_date?: string
+          created_at?: string
           email?: string
           full_name?: string | null
           avatar_url?: string | null

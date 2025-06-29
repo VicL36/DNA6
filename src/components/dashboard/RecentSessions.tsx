@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface Session {
   id: string;
-  created_date: string;
+  created_at: string;
   status: string;
   current_question: number;
   total_questions: number;
@@ -113,7 +113,7 @@ export default function RecentSessions({ sessions, isLoading, onSessionSelect }:
                         Sessão #{session.id.slice(-6)}
                       </h4>
                       <p className="text-sm text-text-secondary">
-                        {format(new Date(session.created_date), 'dd/MM/yyyy HH:mm')}
+                        {format(new Date(session.created_at), 'dd/MM/yyyy HH:mm')}
                       </p>
                     </div>
                   </div>

@@ -5,7 +5,7 @@ import { TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface Response {
-  created_date: string;
+  created_at: string;
   audio_duration?: number;
 }
 
@@ -25,7 +25,7 @@ export default function AnalyticsChart({ responses, isLoading }: AnalyticsChartP
 
     return last7Days.map(date => {
       const dayResponses = responses.filter(r =>
-        r.created_date.split('T')[0] === date
+        r.created_at.split('T')[0] === date
       );
      
       return {

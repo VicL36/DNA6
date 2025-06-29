@@ -87,15 +87,30 @@ export class User {
   }
   
   static async signInWithGoogle() {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`
+    // Check if Google provider is available
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+      
+      if (error) {
+        // If Google OAuth is not enabled, throw a specific error
+        if (error.message.includes('provider is not enabled') || error.message.includes('Unsupported provider')) {
+          throw new Error('GOOGLE_OAUTH_DISABLED')
+        }
+        throw error
       }
-    })
-    
-    if (error) throw error
-    return data
+      
+      return data
+    } catch (error: any) {
+      if (error.message === 'GOOGLE_OAUTH_DISABLED') {
+        throw new Error('Login com Google não está disponível no momento. Use email e senha.')
+      }
+      throw error
+    }
   }
   
   static async logout() {

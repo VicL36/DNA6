@@ -6,14 +6,14 @@ export class User {
     if (error) throw error
     if (!user) throw new Error('User not authenticated')
     
-    // Get user profile from users table
+    // Get user profile from users table - use maybeSingle() to handle no rows gracefully
     const { data: profile, error: profileError } = await supabase
       .from('users')
       .select('*')
       .eq('email', user.email)
-      .single()
+      .maybeSingle()
     
-    if (profileError && profileError.code !== 'PGRST116') {
+    if (profileError) {
       throw profileError
     }
     

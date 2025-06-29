@@ -1,3 +1,262 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --neon-orange: #ff6b35;
+  --neon-blue: #00d4ff;
+  --dark-bg: #0a0a0f;
+  --dark-surface: #1a1a2e;
+  --dark-elevated: #16213e;
+  --metallic: #2d3748;
+  --metallic-light: #4a5568;
+  --text-primary: #ffffff;
+  --text-secondary: #a0aec0;
+  --text-muted: #718096;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--dark-bg);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(255, 107, 53, 0.05) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--dark-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, var(--neon-orange), var(--neon-blue));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #ff8c5a, #33e0ff);
+}
+
+/* Neon glow effects */
+.neon-glow-orange {
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+}
+
+.neon-glow-blue {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.neon-border-orange {
+  border: 1px solid var(--neon-orange);
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.2);
+}
+
+.neon-border-blue {
+  border: 1px solid var(--neon-blue);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+/* Metallic surfaces */
+.metallic-surface {
+  background: linear-gradient(135deg, var(--metallic) 0%, var(--metallic-light) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.metallic-elevated {
+  background: linear-gradient(135deg, var(--dark-elevated) 0%, var(--metallic) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Glass morphism */
+.glass-morphism {
+  background: rgba(26, 26, 46, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Animated gradients */
+.animated-gradient {
+  background: linear-gradient(-45deg, var(--neon-orange), var(--neon-blue), var(--neon-orange), var(--neon-blue));
+  background-size: 400% 400%;
+  animation: gradientShift 4s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Pulse animations */
+.pulse-orange {
+  animation: pulseOrange 2s infinite;
+}
+
+.pulse-blue {
+  animation: pulseBlue 2s infinite;
+}
+
+@keyframes pulseOrange {
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 53, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(255, 107, 53, 0.6); }
+}
+
+@keyframes pulseBlue {
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.6); }
+}
+
+/* Text glow effects */
+.text-glow-orange {
+  text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+}
+
+.text-glow-blue {
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+/* Custom button styles */
+.btn-neon-orange {
+  background: linear-gradient(45deg, var(--neon-orange), #ff8c5a);
+  border: none;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-neon-orange:hover {
+  background: linear-gradient(45deg, #ff8c5a, var(--neon-orange));
+  box-shadow: 0 0 30px rgba(255, 107, 53, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-neon-blue {
+  background: linear-gradient(45deg, var(--neon-blue), #33e0ff);
+  border: none;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-neon-blue:hover {
+  background: linear-gradient(45deg, #33e0ff, var(--neon-blue));
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Loading animations */
+.loading-dots {
+  display: inline-block;
+}
+
+.loading-dots::after {
+  content: '';
+  animation: loadingDots 1.5s infinite;
+}
+
+@keyframes loadingDots {
+  0%, 20% { content: ''; }
+  40% { content: '.'; }
+  60% { content: '..'; }
+  80%, 100% { content: '...'; }
+}
+
+/* Neural network background effect */
+.neural-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.neural-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(255, 107, 53, 0.1) 0%, transparent 25%),
+    radial-gradient(circle at 75% 75%, rgba(0, 212, 255, 0.1) 0%, transparent 25%);
+  animation: neuralPulse 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes neuralPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+/* Progress bar styling */
+.progress-neon {
+  background: var(--dark-surface);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-neon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon-orange), var(--neon-blue));
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(255, 107, 53, 0.1);
+  border-color: rgba(255, 107, 53, 0.3);
+}
+
+/* Audio visualizer effect */
+.audio-visualizer {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.audio-bar {
+  width: 3px;
+  background: linear-gradient(to top, var(--neon-orange), var(--neon-blue));
+  border-radius: 2px;
+  animation: audioWave 1s ease-in-out infinite;
+}
+
+.audio-bar:nth-child(1) { height: 10px; animation-delay: 0s; }
+.audio-bar:nth-child(2) { height: 20px; animation-delay: 0.1s; }
+.audio-bar:nth-child(3) { height: 15px; animation-delay: 0.2s; }
+.audio-bar:nth-child(4) { height: 25px; animation-delay: 0.3s; }
+.audio-bar:nth-child(5) { height: 18px; animation-delay: 0.4s; }
+
+@keyframes audioWave {
+  0%, 100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1); }
+}

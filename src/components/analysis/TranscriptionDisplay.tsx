@@ -15,32 +15,32 @@ export default function TranscriptionDisplay({ transcript, isProcessing }: Trans
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-        <CardHeader className="border-b border-slate-100">
+      <Card className="glass-morphism border-0 shadow-glass">
+        <CardHeader className="border-b border-white/10">
           <CardTitle className="flex items-center gap-2 text-lg">
             {isProcessing ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                Processando...
+                <Loader2 className="w-5 h-5 animate-spin text-neon-blue" />
+                <span className="text-neon-blue text-glow-blue">Processando...</span>
               </>
             ) : (
               <>
-                <FileText className="w-5 h-5 text-emerald-600" />
-                Transcrição da sua resposta
+                <FileText className="w-5 h-5 text-neon-orange" />
+                <span className="text-neon-orange text-glow-orange">Transcrição da sua resposta</span>
               </>
             )}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="bg-slate-50 rounded-lg p-4 min-h-[100px]">
+          <div className="metallic-surface rounded-lg p-4 min-h-[100px]">
             {isProcessing ? (
               <div className="flex items-center justify-center h-20">
-                <div className="text-slate-500">
+                <div className="text-text-secondary">
                   Convertendo áudio em texto...
                 </div>
               </div>
             ) : (
-              <p className="text-slate-700 text-lg leading-relaxed">
+              <p className="text-text-primary text-lg leading-relaxed">
                 {transcript}
               </p>
             )}
@@ -53,7 +53,7 @@ export default function TranscriptionDisplay({ transcript, isProcessing }: Trans
               transition={{ delay: 0.5 }}
               className="mt-4 text-center"
             >
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-text-secondary">
                 Avançando para a próxima pergunta em alguns segundos...
               </p>
             </motion.div>

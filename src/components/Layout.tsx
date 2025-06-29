@@ -6,13 +6,13 @@ import {
   LayoutDashboard,
   Mic,
   History,
-  Settings,
   LogOut,
   Menu,
   Clock,
   CheckCircle,
   Play,
-  Pause
+  Pause,
+  Rocket
 } from "lucide-react";
 import {
   Sidebar,
@@ -113,28 +113,34 @@ export default function Layout({ children, currentPageName }) {
     
     switch (currentSession.status) {
       case 'active':
-        return <Play className="w-4 h-4 text-blue-600" />;
+        return <Play className="w-4 h-4 text-neon-blue" />;
       case 'paused':
-        return <Pause className="w-4 h-4 text-amber-600" />;
+        return <Pause className="w-4 h-4 text-neon-orange" />;
       case 'completed':
-        return <CheckCircle className="w-4 h-4 text-emerald-600" />;
+        return <CheckCircle className="w-4 h-4 text-green-400" />;
       default:
-        return <Clock className="w-4 h-4 text-slate-400" />;
+        return <Clock className="w-4 h-4 text-text-muted" />;
     }
   };
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-50 to-blue-50">
-        <Sidebar className="border-r border-slate-200 bg-white/90 backdrop-blur-sm">
-          <SidebarHeader className="border-b border-slate-200 p-6">
+      <div className="min-h-screen flex w-full bg-dark-bg neural-bg">
+        <Sidebar className="border-r border-white/10 glass-morphism">
+          <SidebarHeader className="border-b border-white/10 p-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-400 via-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Brain className="w-7 h-7 text-white" />
+              <div className="relative w-12 h-12">
+                <div className="absolute inset-0 bg-gradient-to-r from-neon-orange to-neon-blue rounded-xl animate-pulse-orange"></div>
+                <div className="absolute inset-1 bg-dark-surface rounded-lg flex items-center justify-center">
+                  <Brain className="w-6 h-6 text-neon-orange" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-neon-blue rounded-full flex items-center justify-center">
+                  <Rocket className="w-2 h-2 text-white" />
+                </div>
               </div>
               <div>
-                <h2 className="font-bold text-xl text-slate-900">DNA Platform</h2>
-                <p className="text-xs text-amber-600 font-medium">Deep Narrative Analysis</p>
+                <h2 className="font-bold text-xl text-text-primary text-glow-orange">DNA Platform</h2>
+                <p className="text-xs text-neon-blue font-medium">Deep Narrative Analysis</p>
               </div>
             </div>
           </SidebarHeader>
@@ -143,43 +149,43 @@ export default function Layout({ children, currentPageName }) {
             {/* Progresso da Sessão Atual */}
             {currentSession && (
               <SidebarGroup>
-                <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3">
+                <SidebarGroupLabel className="text-xs font-semibold text-text-secondary uppercase tracking-wider px-3 py-3">
                   Sessão Atual
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <div className="px-4 py-3 space-y-4">
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                    <div className="metallic-elevated rounded-xl p-4 neon-border-blue">
                       <div className="flex items-center gap-2 mb-3">
                         {getSessionStatusIcon()}
-                        <span className="text-sm font-semibold text-slate-700">
+                        <span className="text-sm font-semibold text-text-primary">
                           Análise em Andamento
                         </span>
                       </div>
                       
                       <div className="space-y-3">
                         <div>
-                          <div className="flex justify-between text-xs text-slate-600 mb-1">
+                          <div className="flex justify-between text-xs text-text-secondary mb-1">
                             <span>Progresso</span>
                             <span>{getSessionProgress()}%</span>
                           </div>
                           <Progress 
                             value={getSessionProgress()} 
-                            className="h-2 bg-slate-200"
+                            className="h-2 bg-dark-surface progress-neon"
                           />
                         </div>
                         
                         <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="text-center p-2 bg-white/60 rounded-lg">
-                            <div className="font-semibold text-blue-600">
+                          <div className="text-center p-2 bg-dark-surface/60 rounded-lg neon-border-blue">
+                            <div className="font-semibold text-neon-blue">
                               {currentSession.current_question}
                             </div>
-                            <div className="text-slate-500">Atual</div>
+                            <div className="text-text-muted">Atual</div>
                           </div>
-                          <div className="text-center p-2 bg-white/60 rounded-lg">
-                            <div className="font-semibold text-slate-700">
+                          <div className="text-center p-2 bg-dark-surface/60 rounded-lg neon-border-orange">
+                            <div className="font-semibold text-neon-orange">
                               {currentSession.total_questions - currentSession.current_question}
                             </div>
-                            <div className="text-slate-500">Restantes</div>
+                            <div className="text-text-muted">Restantes</div>
                           </div>
                         </div>
                       </div>
@@ -191,7 +197,7 @@ export default function Layout({ children, currentPageName }) {
 
             {/* Navegação */}
             <SidebarGroup>
-              <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3">
+              <SidebarGroupLabel className="text-xs font-semibold text-text-secondary uppercase tracking-wider px-3 py-3">
                 Navegação
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -200,10 +206,10 @@ export default function Layout({ children, currentPageName }) {
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild
-                        className={`hover:bg-amber-50 hover:text-amber-700 transition-all duration-300 rounded-xl mb-1 group ${
+                        className={`hover:bg-dark-elevated hover:text-neon-orange transition-all duration-300 rounded-xl mb-1 group ${
                           location.pathname === item.url
-                            ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 text-white shadow-lg'
-                            : 'text-slate-600'
+                            ? 'bg-gradient-to-r from-neon-orange to-neon-blue text-white shadow-neon-orange'
+                            : 'text-text-secondary hover:neon-border-orange'
                         }`}
                       >
                         <Link to={item.url} className="flex items-center gap-3 px-4 py-3">
@@ -221,29 +227,29 @@ export default function Layout({ children, currentPageName }) {
 
             {/* Estatísticas Pessoais */}
             <SidebarGroup>
-              <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3">
+              <SidebarGroupLabel className="text-xs font-semibold text-text-secondary uppercase tracking-wider px-3 py-3">
                 Suas Estatísticas
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <div className="px-4 py-3 space-y-3">
-                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg p-3 border border-emerald-100">
+                  <div className="metallic-surface rounded-lg p-3 neon-border-blue">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600 font-medium">Sessões Completas</span>
-                      <span className="font-bold text-emerald-600">{userStats.completedSessions}</span>
+                      <span className="text-text-secondary font-medium">Sessões Completas</span>
+                      <span className="font-bold text-neon-blue text-glow-blue">{userStats.completedSessions}</span>
                     </div>
                   </div>
                   
-                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-3 border border-purple-100">
+                  <div className="metallic-surface rounded-lg p-3 neon-border-orange">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600 font-medium">Respostas Gravadas</span>
-                      <span className="font-bold text-purple-600">{userStats.totalResponses}</span>
+                      <span className="text-text-secondary font-medium">Respostas Gravadas</span>
+                      <span className="font-bold text-neon-orange text-glow-orange">{userStats.totalResponses}</span>
                     </div>
                   </div>
                   
-                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-3 border border-amber-100">
+                  <div className="metallic-surface rounded-lg p-3 neon-border-blue">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600 font-medium">Tempo Total</span>
-                      <span className="font-bold text-amber-600">
+                      <span className="text-text-secondary font-medium">Tempo Total</span>
+                      <span className="font-bold text-neon-blue text-glow-blue">
                         {Math.round(userStats.totalAudioTime / 60)}min
                       </span>
                     </div>
@@ -253,27 +259,27 @@ export default function Layout({ children, currentPageName }) {
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarFooter className="border-t border-slate-200 p-4">
+          <SidebarFooter className="border-t border-white/10 p-4">
             {user ? (
               <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                  <div className="w-10 h-10 bg-gradient-to-br from-slate-400 to-slate-600 rounded-full flex items-center justify-center">
+                <div className="flex items-center gap-3 p-3 metallic-surface rounded-xl">
+                  <div className="w-10 h-10 bg-gradient-to-r from-neon-orange to-neon-blue rounded-full flex items-center justify-center">
                     <span className="text-white font-semibold text-sm">
                       {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-900 text-sm truncate">
+                    <p className="font-semibold text-text-primary text-sm truncate">
                       {user.full_name || 'Usuário'}
                     </p>
-                    <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                    <p className="text-xs text-text-secondary truncate">{user.email}</p>
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleLogout}
-                  className="w-full justify-start gap-2 text-slate-600 hover:text-red-600 hover:border-red-200"
+                  className="w-full justify-start gap-2 text-text-secondary hover:text-red-400 hover:border-red-400/30 bg-transparent border-white/20"
                 >
                   <LogOut className="w-4 h-4" />
                   Sair
@@ -281,19 +287,19 @@ export default function Layout({ children, currentPageName }) {
               </div>
             ) : (
               <div className="text-center p-3">
-                <p className="text-sm text-slate-500">Carregando...</p>
+                <p className="text-sm text-text-secondary">Carregando...</p>
               </div>
             )}
           </SidebarFooter>
         </Sidebar>
 
         <main className="flex-1 flex flex-col">
-          <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 px-6 py-4 md:hidden">
+          <header className="bg-dark-surface/80 backdrop-blur-sm border-b border-white/10 px-6 py-4 md:hidden">
             <div className="flex items-center gap-4">
-              <SidebarTrigger className="hover:bg-slate-100 p-2 rounded-lg transition-colors">
+              <SidebarTrigger className="hover:bg-dark-elevated p-2 rounded-lg transition-colors">
                 <Menu className="w-5 h-5" />
               </SidebarTrigger>
-              <h1 className="text-xl font-bold text-slate-900">DNA Platform</h1>
+              <h1 className="text-xl font-bold text-text-primary">DNA Platform</h1>
             </div>
           </header>
 

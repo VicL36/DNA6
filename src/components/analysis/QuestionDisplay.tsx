@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { MessageCircle, Volume2, Check, Brain } from "lucide-react";
+import { MessageCircle, Volume2, Check, Brain, VolumeX } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function QuestionDisplay({ question, audioUrl, questionNumber, domain, onAudioEnded }) {
@@ -64,42 +64,53 @@ export default function QuestionDisplay({ question, audioUrl, questionNumber, do
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.4 }}
     >
-      <Card className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border-0 shadow-lg">
+      <Card className="glass-morphism border-0 shadow-glass card-hover">
         <CardContent className="p-8">
           <div className="text-center space-y-6">
            
             {/* Domain and Question Header */}
             <div className="space-y-2">
-              <div className="flex items-center justify-center gap-2 text-amber-600 mb-2">
+              <div className="flex items-center justify-center gap-2 text-neon-orange mb-2">
                 <Brain className="w-5 h-5" />
-                <span className="font-semibold text-sm uppercase tracking-wider">{domain}</span>
+                <span className="font-semibold text-sm uppercase tracking-wider text-glow-orange">{domain}</span>
               </div>
-              <div className="flex items-center justify-center gap-2 text-orange-600">
+              <div className="flex items-center justify-center gap-2 text-neon-blue">
                 <MessageCircle className="w-6 h-6" />
-                <span className="font-semibold text-lg">Pergunta {questionNumber}</span>
+                <span className="font-semibold text-lg text-glow-blue">Pergunta {questionNumber}</span>
               </div>
             </div>
 
             {/* Audio Player */}
             <div className="flex flex-col items-center justify-center">
-              <div className={`flex items-center gap-3 p-4 rounded-xl transition-all duration-300 ${
-                isPlaying ? 'bg-amber-100 border-2 border-amber-300' :
-                audioEnded ? 'bg-emerald-100 border-2 border-emerald-300' :
-                audioError ? 'bg-orange-100 border-2 border-orange-300' :
-                'bg-slate-100 border-2 border-slate-200'
+              <div className={`flex items-center gap-3 p-4 rounded-xl transition-all duration-300 metallic-elevated ${
+                isPlaying ? 'neon-border-orange animate-pulse-orange' :
+                audioEnded ? 'neon-border-blue' :
+                audioError ? 'border-red-500/30' :
+                'border-white/20'
               }`}>
                 {audioError ? (
-                  <MessageCircle className="w-5 h-5 text-orange-600" />
+                  <VolumeX className="w-5 h-5 text-red-400" />
                 ) : audioEnded ? (
-                  <Check className="w-5 h-5 text-emerald-600" />
+                  <Check className="w-5 h-5 text-neon-blue" />
                 ) : (
-                  <Volume2 className={`w-5 h-5 ${isPlaying ? 'text-amber-600 animate-pulse' : 'text-slate-500'}`} />
+                  <div className="flex items-center gap-2">
+                    <Volume2 className={`w-5 h-5 ${isPlaying ? 'text-neon-orange animate-pulse' : 'text-text-muted'}`} />
+                    {isPlaying && (
+                      <div className="audio-visualizer">
+                        <div className="audio-bar"></div>
+                        <div className="audio-bar"></div>
+                        <div className="audio-bar"></div>
+                        <div className="audio-bar"></div>
+                        <div className="audio-bar"></div>
+                      </div>
+                    )}
+                  </div>
                 )}
                 <span className={`text-sm font-medium ${
-                  isPlaying ? 'text-amber-700' :
-                  audioEnded ? 'text-emerald-700' :
-                  audioError ? 'text-orange-700' :
-                  'text-slate-600'
+                  isPlaying ? 'text-neon-orange text-glow-orange' :
+                  audioEnded ? 'text-neon-blue text-glow-blue' :
+                  audioError ? 'text-red-400' :
+                  'text-text-secondary'
                 }`}>
                   {audioError ? 'Pergunta disponível para leitura' :
                    isPlaying ? 'Reproduzindo pergunta...' :
@@ -131,7 +142,7 @@ export default function QuestionDisplay({ question, audioUrl, questionNumber, do
               animate={{ opacity: (audioEnded || audioError) ? 1 : 0.3, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 leading-relaxed">
+              <h2 className="text-2xl md:text-3xl font-bold text-text-primary leading-relaxed">
                 {question}
               </h2>
             </motion.div>
@@ -141,7 +152,7 @@ export default function QuestionDisplay({ question, audioUrl, questionNumber, do
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="text-slate-600 text-lg"
+                className="text-text-secondary text-lg"
               >
                 Agora você pode gravar sua resposta
               </motion.p>

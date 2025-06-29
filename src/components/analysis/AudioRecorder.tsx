@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Mic,
   Square,
-  Play,
   Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -83,7 +82,7 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
     >
-      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+      <Card className="glass-morphism border-0 shadow-glass">
         <CardContent className="p-8">
           <div className="text-center space-y-6">
            
@@ -94,13 +93,13 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-red-50 border border-red-200 rounded-lg p-4"
+                  className="metallic-elevated rounded-lg p-4 neon-border-orange"
                 >
-                  <div className="flex items-center justify-center gap-2 text-red-600">
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                    <span className="font-medium">Gravando...</span>
+                  <div className="flex items-center justify-center gap-2 text-neon-orange">
+                    <div className="w-3 h-3 bg-neon-orange rounded-full animate-pulse-orange" />
+                    <span className="font-medium text-glow-orange">Gravando...</span>
                   </div>
-                  <p className="text-2xl font-mono mt-2 text-red-700">
+                  <p className="text-2xl font-mono mt-2 text-neon-orange text-glow-orange">
                     {formatTime(recordingTime)}
                   </p>
                 </motion.div>
@@ -114,7 +113,7 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
                   size="lg"
                   onClick={startRecording}
                   disabled={disabled}
-                  className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-xl hover:shadow-2xl transition-all duration-300 group"
+                  className="w-24 h-24 rounded-full btn-neon-blue shadow-neon-blue hover:shadow-neon-blue-lg transition-all duration-300 group"
                 >
                   <Mic className="w-8 h-8 text-white group-hover:scale-110 transition-transform" />
                 </Button>
@@ -124,7 +123,7 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
                 <Button
                   size="lg"
                   onClick={stopRecording}
-                  className="w-24 h-24 rounded-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-xl hover:shadow-2xl transition-all duration-300"
+                  className="w-24 h-24 rounded-full bg-red-500 hover:bg-red-600 shadow-neon-orange hover:shadow-neon-orange-lg transition-all duration-300"
                 >
                   <Square className="w-8 h-8 text-white" />
                 </Button>
@@ -133,7 +132,7 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
 
             {/* Recording Instructions */}
             {!isRecording && !audioBlob && !isProcessing && (
-              <div className="text-slate-600">
+              <div className="text-text-secondary">
                 <p className="text-lg font-medium mb-2">
                   Clique no microfone para começar a gravar
                 </p>
@@ -152,8 +151,8 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
                   exit={{ opacity: 0, y: -20 }}
                   className="space-y-4"
                 >
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                    <p className="text-emerald-700 font-medium">
+                  <div className="metallic-elevated rounded-lg p-4 neon-border-blue">
+                    <p className="text-neon-blue font-medium text-glow-blue">
                       Gravação concluída ({formatTime(recordingTime)})
                     </p>
                   </div>
@@ -165,12 +164,13 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
                         setAudioBlob(null);
                         setRecordingTime(0);
                       }}
+                      className="bg-transparent border-white/20 text-text-secondary hover:border-neon-orange hover:text-neon-orange"
                     >
                       Gravar Novamente
                     </Button>
                     <Button
                       onClick={handleSubmitRecording}
-                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
+                      className="btn-neon-orange shadow-neon-orange hover:shadow-neon-orange-lg"
                     >
                       Enviar Resposta
                     </Button>
@@ -186,13 +186,13 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="bg-blue-50 border border-blue-200 rounded-lg p-6"
+                  className="metallic-elevated rounded-lg p-6 neon-border-blue"
                 >
-                  <div className="flex items-center justify-center gap-3 text-blue-600">
+                  <div className="flex items-center justify-center gap-3 text-neon-blue">
                     <Loader2 className="w-6 h-6 animate-spin" />
-                    <span className="font-medium">Processando sua resposta...</span>
+                    <span className="font-medium text-glow-blue">Processando sua resposta...</span>
                   </div>
-                  <p className="text-sm text-blue-500 mt-2">
+                  <p className="text-sm text-text-secondary mt-2">
                     Gerando transcrição e análise
                   </p>
                 </motion.div>

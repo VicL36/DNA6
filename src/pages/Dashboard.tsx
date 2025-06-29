@@ -12,7 +12,9 @@ import {
   TrendingUp,
   Play,
   BarChart3,
-  Activity
+  Activity,
+  Rocket,
+  Zap
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -61,7 +63,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-8">
+    <div className="min-h-screen bg-dark-bg neural-bg p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
        
         {/* Header */}
@@ -71,21 +73,22 @@ export default function Dashboard() {
           className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
         >
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-800 bg-clip-text text-transparent">
-              Bem-vindo, {user?.full_name?.split(' ')[0] || 'Usuário'}
+            <h1 className="text-4xl font-bold text-text-primary mb-2">
+              Bem-vindo, <span className="text-glow-orange">{user?.full_name?.split(' ')[0] || 'Usuário'}</span>
             </h1>
-            <p className="text-slate-600 mt-2 text-lg">
-              Acompanhe seu progresso na análise narrativa
+            <p className="text-text-secondary text-lg">
+              Acompanhe seu progresso na análise narrativa profunda
             </p>
           </div>
          
           <Link to={createPageUrl("Analysis")}>
             <Button
               size="lg"
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 group"
+              className="btn-neon-blue shadow-neon-blue hover:shadow-neon-blue-lg transition-all duration-300 group"
             >
               <Mic className="w-5 h-5 mr-2 group-hover:animate-pulse" />
               Nova Análise
+              <Zap className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
             </Button>
           </Link>
         </motion.div>
@@ -114,8 +117,8 @@ export default function Dashboard() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <Card className="overflow-hidden shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+              <Card className="glass-morphism border-0 shadow-glass card-hover">
+                <CardHeader className="bg-gradient-to-r from-neon-orange to-neon-blue text-white rounded-t-lg">
                   <CardTitle className="flex items-center gap-2">
                     <Activity className="w-5 h-5" />
                     Ações Rápidas
@@ -125,12 +128,12 @@ export default function Dashboard() {
                   <Link to={createPageUrl("Analysis")} className="block">
                     <Button
                       variant="outline"
-                      className="w-full justify-start gap-3 h-12 hover:bg-blue-50 hover:border-blue-200 transition-all duration-300"
+                      className="w-full justify-start gap-3 h-12 bg-transparent border-white/20 text-text-secondary hover:border-neon-blue hover:text-neon-blue hover:bg-dark-elevated transition-all duration-300"
                     >
-                      <Play className="w-4 h-4 text-blue-600" />
+                      <Play className="w-4 h-4" />
                       <div className="text-left">
                         <div className="font-medium">Iniciar Sessão</div>
-                        <div className="text-xs text-slate-500">Nova análise narrativa</div>
+                        <div className="text-xs text-text-muted">Nova análise narrativa</div>
                       </div>
                     </Button>
                   </Link>
@@ -138,12 +141,12 @@ export default function Dashboard() {
                   <Link to={createPageUrl("History")} className="block">
                     <Button
                       variant="outline"
-                      className="w-full justify-start gap-3 h-12 hover:bg-emerald-50 hover:border-emerald-200 transition-all duration-300"
+                      className="w-full justify-start gap-3 h-12 bg-transparent border-white/20 text-text-secondary hover:border-neon-orange hover:text-neon-orange hover:bg-dark-elevated transition-all duration-300"
                     >
-                      <BarChart3 className="w-4 h-4 text-emerald-600" />
+                      <BarChart3 className="w-4 h-4" />
                       <div className="text-left">
                         <div className="font-medium">Ver Histórico</div>
-                        <div className="text-xs text-slate-500">Sessões anteriores</div>
+                        <div className="text-xs text-text-muted">Sessões anteriores</div>
                       </div>
                     </Button>
                   </Link>

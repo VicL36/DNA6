@@ -25,29 +25,29 @@ export default function StatsGrid({ stats, isLoading }: StatsGridProps) {
       title: "Total de Sessões",
       value: stats.totalSessions,
       icon: Brain,
-      color: "from-blue-500 to-blue-600",
-      bgColor: "from-blue-50 to-blue-100"
+      gradient: "from-neon-blue to-blue-400",
+      glow: "neon-blue"
     },
     {
       title: "Sessões Completas",
       value: stats.completedSessions,
       icon: CheckCircle,
-      color: "from-emerald-500 to-emerald-600",
-      bgColor: "from-emerald-50 to-emerald-100"
+      gradient: "from-green-400 to-emerald-500",
+      glow: "neon-blue"
     },
     {
       title: "Respostas Gravadas",
       value: stats.totalResponses,
       icon: Mic,
-      color: "from-purple-500 to-purple-600",
-      bgColor: "from-purple-50 to-purple-100"
+      gradient: "from-purple-500 to-pink-500",
+      glow: "neon-orange"
     },
     {
       title: "Tempo Médio",
       value: `${stats.avgResponseTime}s`,
       icon: Clock,
-      color: "from-amber-500 to-amber-600",
-      bgColor: "from-amber-50 to-amber-100"
+      gradient: "from-neon-orange to-yellow-500",
+      glow: "neon-orange"
     }
   ];
 
@@ -60,27 +60,27 @@ export default function StatsGrid({ stats, isLoading }: StatsGridProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1 }}
         >
-          <Card className={`overflow-hidden border-0 shadow-lg bg-gradient-to-br ${item.bgColor} hover:shadow-xl transition-all duration-300`}>
+          <Card className={`glass-morphism border-0 shadow-glass card-hover overflow-hidden`}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 mb-1">
+                  <p className="text-sm font-medium text-text-secondary mb-1">
                     {item.title}
                   </p>
                   {isLoading ? (
-                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-8 w-16 bg-dark-surface" />
                   ) : (
-                    <p className="text-3xl font-bold text-slate-900">
+                    <p className="text-3xl font-bold text-text-primary">
                       {item.value}
                     </p>
                   )}
                 </div>
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${item.color} flex items-center justify-center shadow-lg`}>
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${item.gradient} flex items-center justify-center shadow-${item.glow}`}>
                   <item.icon className="w-6 h-6 text-white" />
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Car>
         </motion.div>
       ))}
     </div>

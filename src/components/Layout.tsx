@@ -131,8 +131,12 @@ export default function Layout({ children, currentPageName }) {
             <div className="flex items-center gap-3">
               <div className="relative w-12 h-12">
                 <div className="absolute inset-0 bg-gradient-to-r from-neon-orange to-neon-blue rounded-xl animate-pulse-orange"></div>
-                <div className="absolute inset-1 bg-dark-surface rounded-lg flex items-center justify-center">
-                  <Brain className="w-6 h-6 text-neon-orange" />
+                <div className="absolute inset-1 bg-dark-surface rounded-lg flex items-center justify-center overflow-hidden">
+                  <img 
+                    src="/logo.png" 
+                    alt="DNA Platform Logo" 
+                    className="w-8 h-8 object-contain"
+                  />
                 </div>
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-neon-blue rounded-full flex items-center justify-center">
                   <Rocket className="w-2 h-2 text-white" />
@@ -299,7 +303,14 @@ export default function Layout({ children, currentPageName }) {
               <SidebarTrigger className="hover:bg-dark-elevated p-2 rounded-lg transition-colors">
                 <Menu className="w-5 h-5" />
               </SidebarTrigger>
-              <h1 className="text-xl font-bold text-text-primary">DNA Platform</h1>
+              <div className="flex items-center gap-2">
+                <img 
+                  src="/logo.png" 
+                  alt="DNA Platform Logo" 
+                  className="w-6 h-6 object-contain"
+                />
+                <h1 className="text-xl font-bold text-text-primary">DNA Platform</h1>
+              </div>
             </div>
           </header>
 

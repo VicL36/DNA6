@@ -30,16 +30,23 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-dark-bg neural-bg flex items-center justify-center">
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-6 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 rounded-full animate-pulse"></div>
-            <div className="absolute inset-2 bg-slate-900 rounded-full flex items-center justify-center">
-              <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
+            <div className="absolute inset-0 bg-gradient-to-r from-neon-orange to-neon-blue rounded-full animate-pulse-orange"></div>
+            <div className="absolute inset-2 bg-dark-surface rounded-full flex items-center justify-center overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="DNA Platform Logo" 
+                className="w-12 h-12 object-contain"
+              />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-neon-orange animate-spin" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">DNA Platform</h1>
-          <p className="text-amber-400 font-medium">Deep Narrative Analysis</p>
+          <h1 className="text-2xl font-bold text-text-primary mb-2 text-glow-orange">DNA Platform</h1>
+          <p className="text-neon-blue font-medium">Deep Narrative Analysis</p>
         </div>
       </div>
     )

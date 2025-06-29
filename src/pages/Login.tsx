@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { User } from '@/entities/User'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Brain, Loader2, Rocket } from 'lucide-react'
+import { Loader2, Rocket } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 
@@ -57,10 +57,14 @@ export default function Login({ onLogin }: LoginProps) {
           className="text-center mb-8"
         >
           <div className="relative w-32 h-32 mx-auto mb-6">
-            {/* Brain with neon glow */}
+            {/* Logo container with neon glow */}
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-neon-orange to-neon-blue opacity-20 animate-pulse-orange"></div>
-            <div className="absolute inset-2 rounded-full bg-dark-surface flex items-center justify-center">
-              <Brain className="w-16 h-16 text-neon-orange animate-glow" />
+            <div className="absolute inset-2 rounded-full bg-dark-surface flex items-center justify-center overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="DNA Platform Logo" 
+                className="w-20 h-20 object-contain animate-glow"
+              />
             </div>
             {/* Rocket */}
             <div className="absolute -top-2 -right-2 w-12 h-12 bg-gradient-to-r from-neon-blue to-neon-orange rounded-full flex items-center justify-center animate-float">

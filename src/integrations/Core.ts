@@ -37,7 +37,7 @@ export async function transcribeAudio(audioBlob: Blob): Promise<LLMResponse> {
     const formData = new FormData()
     formData.append('audio', audioBlob, 'recording.wav')
 
-    const response = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&punctuate=true&diarize=false', {
+    const response = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&punctuate=true&diarize=false&language=pt', {
       method: 'POST',
       headers: {
         'Authorization': `Token ${import.meta.env.VITE_DEEPGRAM_API_KEY}`,

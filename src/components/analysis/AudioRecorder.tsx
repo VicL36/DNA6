@@ -4,7 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Mic,
   Square,
-  Loader2
+  Loader2,
+  Play,
+  Pause
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -18,27 +20,55 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        } 
+      });
+      
+      streamRef.current = stream;
+      
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
       mediaRecorderRef.current = mediaRecorder;
 
       const chunks: BlobPart[] = [];
+      
       mediaRecorder.ondataavailable = (event) => {
-        chunks.push(event.data);
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/wav' });
+        const blob = new Blob(chunks, { type: 'audio/webm;codecs=opus' });
         setAudioBlob(blob);
-        stream.getTracks().forEach(track => track.stop());
+        
+        // Create URL for playback
+        const url = URL.createObjectURL(blob);
+        setAudioUrl(url);
+        
+        // Stop all tracks
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(1000); // Collect data every second
       setIsRecording(true);
       setRecordingTime(0);
 
@@ -49,6 +79,7 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
 
     } catch (error) {
       console.error("Error starting recording:", error);
+      alert("Erro ao acessar o microfone. Verifique as permissões do navegador.");
     }
   };
 
@@ -56,8 +87,27 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+    }
+  };
+
+  const playRecording = () => {
+    if (audioUrl && audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.play();
+        setIsPlaying(true);
       }
     }
   };
@@ -65,8 +115,27 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
   const handleSubmitRecording = () => {
     if (audioBlob) {
       onRecordingComplete(audioBlob, recordingTime);
+      
+      // Clean up
       setAudioBlob(null);
+      setAudioUrl(null);
       setRecordingTime(0);
+      setIsPlaying(false);
+      
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    }
+  };
+
+  const handleDiscardRecording = () => {
+    setAudioBlob(null);
+    setAudioUrl(null);
+    setRecordingTime(0);
+    setIsPlaying(false);
+    
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
     }
   };
 
@@ -152,19 +221,29 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
                   className="space-y-4"
                 >
                   <div className="metallic-elevated rounded-lg p-4 neon-border-blue">
-                    <p className="text-neon-blue font-medium text-glow-blue">
+                    <p className="text-neon-blue font-medium text-glow-blue mb-3">
                       Gravação concluída ({formatTime(recordingTime)})
                     </p>
+                    
+                    {/* Audio playback */}
+                    <div className="flex items-center justify-center gap-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={playRecording}
+                        className="bg-transparent border-white/20 text-text-secondary hover:border-neon-blue hover:text-neon-blue"
+                      >
+                        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        {isPlaying ? 'Pausar' : 'Reproduzir'}
+                      </Button>
+                    </div>
                   </div>
                  
                   <div className="flex gap-4 justify-center">
                     <Button
                       variant="outline"
-                      onClick={() => {
-                        setAudioBlob(null);
-                        setRecordingTime(0);
-                      }}
-                      className="bg-transparent border-white/20 text-text-secondary hover:border-neon-orange hover:text-neon-orange"
+                      onClick={handleDiscardRecording}
+                      className="bg-transparent border-white/20 text-text-secondary hover:border-red-400 hover:text-red-400"
                     >
                       Gravar Novamente
                     </Button>
@@ -198,6 +277,17 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing, disab
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Hidden audio element for playback */}
+            {audioUrl && (
+              <audio
+                ref={audioRef}
+                src={audioUrl}
+                onEnded={() => setIsPlaying(false)}
+                onPause={() => setIsPlaying(false)}
+                className="hidden"
+              />
+            )}
 
           </div>
         </CardContent>

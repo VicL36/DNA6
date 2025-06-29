@@ -31,6 +31,61 @@ export class User {
     }
   }
   
+  static async signUp(email: string, password: string, fullName?: string) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName
+        }
+      }
+    })
+    
+    if (error) throw error
+    
+    // Create user profile
+    if (data.user) {
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert({
+          id: data.user.id,
+          email: data.user.email!,
+          full_name: fullName || null,
+          last_login: new Date().toISOString(),
+          total_sessions: 0,
+          completed_sessions: 0,
+          total_responses: 0,
+          total_audio_time: 0
+        })
+      
+      if (profileError) {
+        console.error('Error creating user profile:', profileError)
+      }
+    }
+    
+    return data
+  }
+  
+  static async signIn(email: string, password: string) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+    
+    if (error) throw error
+    
+    // Update last login
+    if (data.user) {
+      await supabase
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('email', data.user.email)
+    }
+    
+    return data
+  }
+  
   static async signInWithGoogle() {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

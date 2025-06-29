@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { User } from '@/entities/User'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Rocket } from 'lucide-react'
+import { Loader2, Rocket, Eye, EyeOff } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 
@@ -11,6 +11,12 @@ interface LoginProps {
 }
 
 export default function Login({ onLogin }: LoginProps) {
+  const [isLogin, setIsLogin] = useState(true)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -24,7 +30,7 @@ export default function Login({ onLogin }: LoginProps) {
           onLogin(user)
         } catch (error) {
           console.error('Error handling auth callback:', error)
-          setError('Erro ao processar login com Google')
+          setError('Erro ao processar login')
           setGoogleLoading(false)
         }
       }
@@ -32,6 +38,30 @@ export default function Login({ onLogin }: LoginProps) {
 
     return () => subscription.unsubscribe()
   }, [onLogin])
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+
+    try {
+      if (isLogin) {
+        const { user } = await User.signIn(email, password)
+        if (user) {
+          const userProfile = await User.me()
+          onLogin(userProfile)
+        }
+      } else {
+        await User.signUp(email, password, fullName)
+        setError('Conta criada! Verifique seu email para confirmar.')
+        setIsLogin(true)
+      }
+    } catch (err: any) {
+      setError(err.message || 'Erro na autenticação')
+    }
+
+    setLoading(false)
+  }
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true)
@@ -109,10 +139,91 @@ export default function Login({ onLogin }: LoginProps) {
           <Card className="glass-morphism border-0 shadow-glass card-hover">
             <CardHeader className="text-center">
               <CardTitle className="text-text-primary text-xl">
-                Acesse sua Análise Narrativa
+                {isLogin ? 'Acesse sua Análise Narrativa' : 'Crie sua Conta'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              
+              {/* Email/Password Form */}
+              <form onSubmit={handleEmailAuth} className="space-y-4">
+                {!isLogin && (
+                  <div>
+                    <label htmlFor="fullName" className="block text-sm font-medium text-text-secondary mb-2">
+                      Nome Completo
+                    </label>
+                    <input
+                      id="fullName"
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="w-full px-4 py-3 bg-dark-surface border border-white/20 rounded-lg text-text-primary placeholder-text-muted focus:border-neon-orange focus:outline-none transition-colors"
+                      placeholder="Seu nome completo"
+                      required={!isLogin}
+                    />
+                  </div>
+                )}
+                
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-2">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-dark-surface border border-white/20 rounded-lg text-text-primary placeholder-text-muted focus:border-neon-orange focus:outline-none transition-colors"
+                    placeholder="seu@email.com"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-2">
+                    Senha
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-4 py-3 bg-dark-surface border border-white/20 rounded-lg text-text-primary placeholder-text-muted focus:border-neon-orange focus:outline-none transition-colors pr-12"
+                      placeholder="Sua senha"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full btn-neon-orange shadow-neon-orange hover:shadow-neon-orange-lg transition-all duration-300 py-4"
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  ) : null}
+                  {loading ? 'Processando...' : isLogin ? 'Entrar' : 'Criar Conta'}
+                </Button>
+              </form>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/20"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-dark-surface text-text-muted">ou</span>
+                </div>
+              </div>
               
               {/* Google Login Button */}
               <Button
@@ -134,11 +245,29 @@ export default function Login({ onLogin }: LoginProps) {
                 {googleLoading ? 'Conectando...' : 'Continuar com Google'}
               </Button>
 
+              {/* Toggle Login/Register */}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(!isLogin)
+                    setError('')
+                  }}
+                  className="text-sm text-text-secondary hover:text-neon-orange transition-colors"
+                >
+                  {isLogin ? 'Não tem conta? Criar uma' : 'Já tem conta? Fazer login'}
+                </button>
+              </div>
+
               {error && (
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="text-sm p-4 rounded-lg bg-red-500/20 text-red-300 border border-red-500/30 neon-border-orange"
+                  className={`text-sm p-4 rounded-lg border ${
+                    error.includes('criada') 
+                      ? 'bg-green-500/20 text-green-300 border-green-500/30' 
+                      : 'bg-red-500/20 text-red-300 border-red-500/30'
+                  }`}
                 >
                   {error}
                 </motion.div>

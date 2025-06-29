@@ -46,39 +46,40 @@ export default function AnalyticsChart({ responses, isLoading }: AnalyticsChartP
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.4 }}
     >
-      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardHeader className="border-b border-slate-100">
+      <Card className="glass-morphism border-0 shadow-glass">
+        <CardHeader className="border-b border-white/10">
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-emerald-600" />
-            Atividade dos Últimos 7 Dias
+            <TrendingUp className="w-5 h-5 text-neon-orange" />
+            <span className="text-glow-orange">Atividade dos Últimos 7 Dias</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           {isLoading ? (
             <div className="h-48 flex items-center justify-center">
-              <div className="animate-pulse text-slate-500">
+              <div className="animate-pulse text-text-secondary">
                 Carregando dados...
               </div>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 12, fill: '#64748b' }}
-                  axisLine={{ stroke: '#e2e8f0' }}
+                  tick={{ fontSize: 12, fill: '#a0aec0' }}
+                  axisLine={{ stroke: 'rgba(255, 255, 255, 0.1)' }}
                 />
                 <YAxis
-                  tick={{ fontSize: 12, fill: '#64748b' }}
-                  axisLine={{ stroke: '#e2e8f0' }}
+                  tick={{ fontSize: 12, fill: '#a0aec0' }}
+                  axisLine={{ stroke: 'rgba(255, 255, 255, 0.1)' }}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e2e8f0',
+                    backgroundColor: '#1a1a2e',
+                    border: '1px solid rgba(255, 107, 53, 0.3)',
                     borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    color: '#ffffff'
                   }}
                 />
                 <Bar
@@ -88,8 +89,8 @@ export default function AnalyticsChart({ responses, isLoading }: AnalyticsChartP
                 />
                 <defs>
                   <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" />
-                    <stop offset="100%" stopColor="#1d4ed8" />
+                    <stop offset="0%" stopColor="#ff6b35" />
+                    <stop offset="100%" stopColor="#00d4ff" />
                   </linearGradient>
                 </defs>
               </BarChart>

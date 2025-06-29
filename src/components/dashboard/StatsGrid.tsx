@@ -80,7 +80,7 @@ export default function StatsGrid({ stats, isLoading }: StatsGridProps) {
                 </div>
               </div>
             </CardContent>
-          </Car>
+          </Card>
         </motion.div>
       ))}
     </div>

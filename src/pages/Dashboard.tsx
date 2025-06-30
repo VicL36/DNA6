@@ -14,7 +14,8 @@ import {
   BarChart3,
   Activity,
   Rocket,
-  Zap
+  Zap,
+  PlayCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const [sessions, setSessions] = useState([]);
   const [responses, setResponses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeSession, setActiveSession] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -45,6 +47,12 @@ export default function Dashboard() {
       );
       setSessions(userSessions);
 
+      // Verificar se há sessão ativa
+      const activeSessions = userSessions.filter(s => s.status === 'active');
+      if (activeSessions.length > 0) {
+        setActiveSession(activeSessions[0]);
+      }
+
       const allResponses = await UserResponse.list('-created_at', 50);
       setResponses(allResponses);
     } catch (error) {
@@ -60,6 +68,11 @@ export default function Dashboard() {
     avgResponseTime: responses.length > 0
       ? Math.round(responses.reduce((acc, r) => acc + (r.audio_duration || 0), 0) / responses.length)
       : 0
+  };
+
+  const getSessionProgress = (session) => {
+    if (!session) return 0;
+    return Math.round((session.current_question / session.total_questions) * 100);
   };
 
   return (
@@ -81,17 +94,80 @@ export default function Dashboard() {
             </p>
           </div>
          
-          <Link to={createPageUrl("Analysis")}>
-            <Button
-              size="lg"
-              className="btn-neon-blue shadow-neon-blue hover:shadow-neon-blue-lg transition-all duration-300 group"
-            >
-              <Mic className="w-5 h-5 mr-2 group-hover:animate-pulse" />
-              Nova Análise
-              <Zap className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
-            </Button>
-          </Link>
+          <div className="flex gap-4">
+            {/* Continue de onde parou - só aparece se há sessão ativa */}
+            {activeSession && (
+              <Link to={createPageUrl("Analysis")}>
+                <Button
+                  size="lg"
+                  className="btn-neon-orange shadow-neon-orange hover:shadow-neon-orange-lg transition-all duration-300 group"
+                >
+                  <PlayCircle className="w-5 h-5 mr-2 group-hover:animate-pulse" />
+                  Continue de onde parou
+                  <span className="ml-2 text-xs bg-white/20 px-2 py-1 rounded-full">
+                    {getSessionProgress(activeSession)}%
+                  </span>
+                </Button>
+              </Link>
+            )}
+            
+            <Link to={createPageUrl("Analysis")}>
+              <Button
+                size="lg"
+                className="btn-neon-blue shadow-neon-blue hover:shadow-neon-blue-lg transition-all duration-300 group"
+              >
+                <Mic className="w-5 h-5 mr-2 group-hover:animate-pulse" />
+                {activeSession ? 'Nova Análise' : 'Iniciar Análise'}
+                <Zap className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
+              </Button>
+            </Link>
+          </div>
         </motion.div>
+
+        {/* Continue de onde parou - Card destacado */}
+        {activeSession && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="glass-morphism border-0 shadow-glass card-hover bg-gradient-to-r from-neon-orange/10 to-neon-blue/10 border-neon-orange/30">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-gradient-to-r from-neon-orange to-neon-blue rounded-xl flex items-center justify-center animate-pulse-orange">
+                      <PlayCircle className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-text-primary text-glow-orange">
+                        Continue sua Análise DNA
+                      </h3>
+                      <p className="text-text-secondary">
+                        Você parou na pergunta {activeSession.current_question} de {activeSession.total_questions}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="w-32 h-2 bg-dark-surface rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-neon-orange to-neon-blue transition-all duration-500"
+                            style={{ width: `${getSessionProgress(activeSession)}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-neon-orange">
+                          {getSessionProgress(activeSession)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <Link to={createPageUrl("Analysis")}>
+                    <Button className="btn-neon-orange shadow-neon-orange hover:shadow-neon-orange-lg">
+                      Continuar
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Stats Grid */}
         <StatsGrid stats={stats} isLoading={isLoading} />

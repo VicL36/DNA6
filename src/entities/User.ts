@@ -88,8 +88,12 @@ export class User {
   
   static async signInWithGoogle() {
     try {
-      // Get the correct redirect URL based on environment
-      const redirectTo = window.location.origin + '/auth/callback'
+      // Detectar ambiente e definir URL de callback correta
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      const baseUrl = isLocalhost ? 'http://localhost:5173' : window.location.origin
+      const redirectTo = `${baseUrl}/auth/callback`
+      
+      console.log('Tentando login Google com redirect:', redirectTo)
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -97,27 +101,42 @@ export class User {
           redirectTo: redirectTo,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account',
           }
         }
       })
       
       if (error) {
-        // Check for specific Google OAuth errors
+        console.error('Erro no Google OAuth:', error)
+        
+        // Verificar tipos específicos de erro
         if (error.message.includes('provider is not enabled') || 
             error.message.includes('Unsupported provider') ||
-            error.message.includes('validation_failed')) {
+            error.message.includes('validation_failed') ||
+            error.message.includes('PGRST301')) {
           throw new Error('GOOGLE_OAUTH_DISABLED')
         }
+        
+        if (error.message.includes('refused') || error.message.includes('CORS')) {
+          throw new Error('GOOGLE_OAUTH_CORS_ERROR')
+        }
+        
         throw error
       }
       
       return data
     } catch (error: any) {
+      console.error('Erro completo no Google OAuth:', error)
+      
       if (error.message === 'GOOGLE_OAUTH_DISABLED') {
-        throw new Error('Login com Google não está disponível no momento. Use email e senha.')
+        throw new Error('Login com Google não está configurado no Supabase. Configure o provider Google nas configurações de autenticação.')
       }
-      throw error
+      
+      if (error.message === 'GOOGLE_OAUTH_CORS_ERROR') {
+        throw new Error('Erro de CORS. Verifique se o domínio está autorizado no Google Cloud Console.')
+      }
+      
+      throw new Error('Erro no login com Google. Tente novamente ou use email e senha.')
     }
   }
   
@@ -140,35 +159,44 @@ export class User {
   }
 
   static async handleAuthCallback() {
-    const { data, error } = await supabase.auth.getSession()
-    
-    if (error) throw error
-    
-    if (data.session?.user) {
-      const user = data.session.user
+    try {
+      const { data, error } = await supabase.auth.getSession()
       
-      // Create or update user profile
-      const { error: upsertError } = await supabase
-        .from('users')
-        .upsert({
-          id: user.id,
-          email: user.email!,
-          full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-          avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
-          last_login: new Date().toISOString(),
-          total_sessions: 0,
-          completed_sessions: 0,
-          total_responses: 0,
-          total_audio_time: 0
-        }, {
-          onConflict: 'email'
-        })
-      
-      if (upsertError) {
-        console.error('Error upserting user profile:', upsertError)
+      if (error) {
+        console.error('Erro ao obter sessão:', error)
+        throw error
       }
+      
+      if (data.session?.user) {
+        const user = data.session.user
+        console.log('Usuário autenticado:', user.email)
+        
+        // Create or update user profile
+        const { error: upsertError } = await supabase
+          .from('users')
+          .upsert({
+            id: user.id,
+            email: user.email!,
+            full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+            avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+            last_login: new Date().toISOString(),
+            total_sessions: 0,
+            completed_sessions: 0,
+            total_responses: 0,
+            total_audio_time: 0
+          }, {
+            onConflict: 'email'
+          })
+        
+        if (upsertError) {
+          console.error('Error upserting user profile:', upsertError)
+        }
+      }
+      
+      return data
+    } catch (error) {
+      console.error('Erro no callback de autenticação:', error)
+      throw error
     }
-    
-    return data
   }
 }

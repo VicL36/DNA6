@@ -37,7 +37,7 @@ function App() {
             <div className="absolute inset-2 bg-dark-surface rounded-full flex items-center justify-center overflow-hidden">
               <img 
                 src="/logo.png" 
-                alt="DNA Platform Logo" 
+                alt="DNA UP Logo" 
                 className="w-12 h-12 object-contain"
               />
             </div>
@@ -45,7 +45,7 @@ function App() {
               <Loader2 className="w-8 h-8 text-neon-orange animate-spin" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-text-primary mb-2 text-glow-orange">DNA Platform</h1>
+          <h1 className="text-2xl font-bold text-text-primary mb-2 text-glow-orange">DNA UP</h1>
           <p className="text-neon-blue font-medium">Deep Narrative Analysis</p>
         </div>
       </div>

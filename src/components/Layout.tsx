@@ -73,7 +73,7 @@ export default function Layout({ children, currentPageName }) {
       // Buscar sessão ativa
       const activeSessions = await AnalysisSession.filter(
         { user_email: currentUser.email, status: 'active' },
-        '-created_date',
+        '-created_at',
         1
       );
       
@@ -133,7 +133,7 @@ export default function Layout({ children, currentPageName }) {
                 <div className="absolute inset-1 bg-dark-surface rounded-lg flex items-center justify-center overflow-hidden">
                   <img 
                     src="/logo.png" 
-                    alt="DNA Platform Logo" 
+                    alt="DNA UP Logo" 
                     className="w-8 h-8 object-contain"
                   />
                 </div>
@@ -142,7 +142,7 @@ export default function Layout({ children, currentPageName }) {
                 </div>
               </div>
               <div>
-                <h2 className="font-bold text-xl text-text-primary text-glow-orange">DNA Platform</h2>
+                <h2 className="font-bold text-xl text-text-primary text-glow-orange">DNA UP</h2>
                 <p className="text-xs text-neon-blue font-medium">Deep Narrative Analysis</p>
               </div>
             </div>
@@ -313,10 +313,10 @@ export default function Layout({ children, currentPageName }) {
               <div className="flex items-center gap-2">
                 <img 
                   src="/logo.png" 
-                  alt="DNA Platform Logo" 
+                  alt="DNA UP Logo" 
                   className="w-6 h-6 object-contain"
                 />
-                <h1 className="text-xl font-bold text-text-primary">DNA Platform</h1>
+                <h1 className="text-xl font-bold text-text-primary">DNA UP</h1>
               </div>
             </div>
           </header>

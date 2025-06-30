@@ -12,7 +12,9 @@ export default function AuthCallback() {
 
   const handleAuthCallback = async () => {
     try {
+      console.log('Processando callback de autenticação...')
       await User.handleAuthCallback()
+      console.log('Callback processado com sucesso, redirecionando...')
       // Redirect to dashboard after successful authentication
       navigate('/dashboard')
     } catch (error) {
@@ -30,7 +32,7 @@ export default function AuthCallback() {
           <div className="absolute inset-2 bg-dark-surface rounded-full flex items-center justify-center overflow-hidden">
             <img 
               src="/logo.png" 
-              alt="DNA Platform Logo" 
+              alt="DNA UP Logo" 
               className="w-12 h-12 object-contain"
             />
           </div>

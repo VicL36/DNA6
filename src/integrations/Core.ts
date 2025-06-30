@@ -1,4 +1,4 @@
-// Integrações REAIS para DNA UP Platform - VERSÃO ATUALIZADA
+// Integrações REAIS para DNA UP Platform - UPLOAD IMEDIATO
 import { googleDriveService } from './GoogleDriveService'
 import { FineTuningDatasetGenerator } from './FineTuningDatasetGenerator'
 
@@ -204,10 +204,10 @@ Retorne uma análise estruturada e detalhada.
   }
 }
 
-// Upload REAL para Google Drive - VERSÃO ATUALIZADA
+// Upload IMEDIATO para Google Drive - PRIORIDADE MÁXIMA
 export async function UploadFile(request: FileUploadRequest): Promise<FileUploadResponse> {
   try {
-    console.log('📁 Iniciando upload REAL para Google Drive...')
+    console.log('🚨 UPLOAD IMEDIATO INICIADO para Google Drive...')
     console.log('📄 Arquivo:', request.file.name, 'Usuário:', request.userEmail, 'Pergunta:', request.questionIndex)
 
     // Verificar se o Google Drive está configurado
@@ -224,8 +224,8 @@ export async function UploadFile(request: FileUploadRequest): Promise<FileUpload
       throw new Error('Google Drive não está configurado. Adicione as variáveis de ambiente no Railway.')
     }
 
-    // 1. Upload do arquivo de áudio
-    console.log('🎵 Fazendo upload do áudio...')
+    // 1. Upload IMEDIATO do arquivo de áudio
+    console.log('🎵 UPLOAD IMEDIATO: Fazendo upload do áudio...')
     const audioUpload = await googleDriveService.uploadAudioFile(
       request.file,
       request.userEmail,
@@ -233,7 +233,7 @@ export async function UploadFile(request: FileUploadRequest): Promise<FileUpload
       request.questionText
     )
 
-    console.log('✅ Áudio enviado para Google Drive:', audioUpload.fileUrl)
+    console.log('✅ ÁUDIO ENVIADO IMEDIATAMENTE para Google Drive:', audioUpload.fileUrl)
 
     return {
       file_url: audioUpload.fileUrl,
@@ -242,7 +242,7 @@ export async function UploadFile(request: FileUploadRequest): Promise<FileUpload
     }
 
   } catch (error) {
-    console.error('❌ Erro no upload para Google Drive:', error)
+    console.error('❌ Erro no upload IMEDIATO para Google Drive:', error)
     
     // Fallback para upload simulado
     console.log('🔄 Usando upload simulado como fallback...')
@@ -257,7 +257,7 @@ export async function UploadFile(request: FileUploadRequest): Promise<FileUpload
   }
 }
 
-// Salvar transcrição no Google Drive - VERSÃO ATUALIZADA
+// Salvar IMEDIATAMENTE transcrição no Google Drive
 export async function saveTranscriptionToDrive(
   transcription: string,
   userEmail: string,
@@ -265,7 +265,7 @@ export async function saveTranscriptionToDrive(
   questionText: string
 ): Promise<{ fileId: string; fileUrl: string }> {
   try {
-    console.log('📝 Salvando transcrição no Google Drive...')
+    console.log('🚨 SALVAMENTO IMEDIATO: Salvando transcrição no Google Drive...')
 
     if (!googleDriveService.isConfigured()) {
       console.warn('⚠️ Google Drive não configurado, pulando salvamento da transcrição')
@@ -282,7 +282,7 @@ export async function saveTranscriptionToDrive(
       questionText
     )
 
-    console.log('✅ Transcrição salva no Google Drive:', transcriptionUpload.fileUrl)
+    console.log('✅ TRANSCRIÇÃO SALVA IMEDIATAMENTE no Google Drive:', transcriptionUpload.fileUrl)
 
     return {
       fileId: transcriptionUpload.fileId,
@@ -290,7 +290,7 @@ export async function saveTranscriptionToDrive(
     }
 
   } catch (error) {
-    console.error('❌ Erro ao salvar transcrição:', error)
+    console.error('❌ Erro no salvamento IMEDIATO da transcrição:', error)
     return {
       fileId: 'mock_transcription_id',
       fileUrl: 'https://drive.google.com/mock-transcription'

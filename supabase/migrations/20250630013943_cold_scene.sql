@@ -1,5 +1,23 @@
 -- ===== SCHEMA COMPLETO DNA UP PLATFORM =====
--- Execute este SQL completo no Supabase SQL Editor
+-- Migração única e definitiva para criar todas as tabelas
+
+/*
+  # Schema Completo DNA UP - Deep Narrative Analysis
+
+  ## Tabelas Principais
+  - users - Perfis de usuários
+  - analysis_sessions - Sessões de análise
+  - user_responses - Respostas dos usuários
+
+  ## Segurança
+  - RLS habilitado em todas as tabelas
+  - Políticas de acesso granulares
+  - Triggers para estatísticas automáticas
+
+  ## Índices
+  - Otimização para consultas frequentes
+  - Performance melhorada
+*/
 
 -- ===== HABILITAR EXTENSÕES =====
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -148,6 +166,12 @@ INSERT INTO users (email, full_name, total_sessions, completed_sessions) VALUES
 ('teste@dnaup.com', 'Usuário Teste', 2, 1),
 ('demo@dnaup.com', 'Demo User', 1, 0)
 ON CONFLICT (email) DO NOTHING;
+
+INSERT INTO analysis_sessions (user_email, status, current_question, progress_percentage) VALUES
+('teste@dnaup.com', 'completed', 108, 100),
+('teste@dnaup.com', 'active', 45, 42),
+('demo@dnaup.com', 'active', 12, 11)
+ON CONFLICT DO NOTHING;
 */
 
 -- ===== VERIFICAÇÃO FINAL =====
@@ -156,7 +180,7 @@ SELECT
   schemaname,
   tablename,
   tableowner,
-  'Tabela criada com sucesso!' as status
+  'Tabela criada com sucesso! ✅' as status
 FROM pg_tables 
 WHERE schemaname = 'public' 
   AND tablename IN ('users', 'analysis_sessions', 'user_responses');
@@ -180,4 +204,4 @@ FROM pg_policies
 WHERE schemaname = 'public';
 
 -- Mensagem final
-SELECT 'SCHEMA DNA UP CRIADO COM SUCESSO! 🧬✅' as resultado;
+SELECT '🧬 SCHEMA DNA UP CRIADO COM SUCESSO! ✅' as resultado;

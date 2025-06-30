@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { AnalysisSession, UserResponse } from "@/entities/all";
 import { User } from "@/entities/User";
-import { transcribeAudio, generateAnalysis, UploadFile } from "@/integrations/Core";
+import { 
+  transcribeAudio, 
+  generateAnalysis, 
+  UploadFile, 
+  saveTranscriptionToDrive,
+  generateFinalReportToDrive 
+} from "@/integrations/Core";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { DNA_ANALYSIS_QUESTIONS } from "@/data/questions";
-import {
-  ArrowLeft,
-  CheckCircle,
-  Loader2,
-  FileText,
-  Brain,
-  Rocket
-} from "lucide-react";
+import { ArrowLeft, CheckCircle, Loader2, FileText, Brain, Rocket, UploadCloud as CloudUpload, HardDrive } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import AudioRecorder from "@/components/analysis/AudioRecorder";
@@ -32,6 +31,7 @@ export default function Analysis() {
   const [sessionCompleted, setSessionCompleted] = useState(false);
   const [audioEnded, setAudioEnded] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
 
   useEffect(() => {
     initializeSession();
@@ -39,7 +39,7 @@ export default function Analysis() {
 
   const initializeSession = async () => {
     try {
-      console.log('Inicializando sessão de análise...')
+      console.log('🔄 Inicializando sessão de análise...')
       const currentUser = await User.me();
       setUser(currentUser);
      
@@ -53,12 +53,12 @@ export default function Analysis() {
       if (activeSessions.length > 0) {
         // Continuar sessão existente
         const session = activeSessions[0];
-        console.log('Continuando sessão existente:', session)
+        console.log('✅ Continuando sessão existente:', session.id)
         setCurrentSession(session);
         setCurrentQuestionIndex(session.current_question - 1);
       } else {
         // Criar nova sessão
-        console.log('Criando nova sessão...')
+        console.log('🆕 Criando nova sessão...')
         const session = await AnalysisSession.create({
           user_email: currentUser.email,
           status: "active",
@@ -66,49 +66,75 @@ export default function Analysis() {
           total_questions: DNA_ANALYSIS_QUESTIONS.length,
           progress_percentage: 0
         });
-        console.log('Nova sessão criada:', session)
+        console.log('✅ Nova sessão criada:', session.id)
         setCurrentSession(session);
       }
     } catch (error) {
-      console.error("Erro ao inicializar sessão:", error);
+      console.error("❌ Erro ao inicializar sessão:", error);
     }
   };
 
   const handleAudioEnded = () => {
-    console.log('Áudio da pergunta terminou')
+    console.log('🔊 Áudio da pergunta terminou')
     setAudioEnded(true);
   };
 
   const handleRecordingComplete = async (audioBlob, duration) => {
     if (!currentSession) {
-      console.error('Nenhuma sessão ativa')
+      console.error('❌ Nenhuma sessão ativa')
       return;
     }
    
-    console.log('Processando gravação...', { duration, sessionId: currentSession.id })
+    console.log('🎤 Processando gravação...', { 
+      duration, 
+      sessionId: currentSession.id,
+      questionIndex: currentQuestionIndex + 1
+    })
+    
     setIsProcessing(true);
+    setUploadStatus("Preparando upload...");
    
     try {
       const currentQuestion = DNA_ANALYSIS_QUESTIONS[currentQuestionIndex];
       
-      // Upload audio para storage (simulado)
+      // 1. Upload do arquivo de áudio para Google Drive
+      setUploadStatus("📤 Enviando áudio para Google Drive...");
+      console.log('📤 Fazendo upload do áudio para Google Drive...')
+      
       const audioFile = new File([audioBlob], `${user.email}_q${currentQuestionIndex + 1}_${Date.now()}.wav`, {
         type: 'audio/wav'
       });
      
-      console.log('Fazendo upload do arquivo...')
-      const { file_url, drive_file_id } = await UploadFile({ 
+      const uploadResult = await UploadFile({ 
         file: audioFile,
         userEmail: user.email,
-        questionIndex: currentQuestionIndex + 1
+        questionIndex: currentQuestionIndex + 1,
+        questionText: currentQuestion.text
       });
-     
-      // Gerar transcrição
-      console.log('Gerando transcrição...')
-      const transcriptionResult = await transcribeAudio(audioBlob);
+      
+      console.log('✅ Áudio enviado para Google Drive:', uploadResult.file_url)
+      setUploadStatus("✅ Áudio salvo no Google Drive");
 
-      // Salvar resposta no banco de dados
-      console.log('Salvando resposta no banco...')
+      // 2. Gerar transcrição
+      setUploadStatus("🎤 Gerando transcrição...");
+      console.log('🎤 Gerando transcrição...')
+      const transcriptionResult = await transcribeAudio(audioBlob);
+      console.log('✅ Transcrição gerada:', transcriptionResult.transcription?.substring(0, 50) + '...')
+
+      // 3. Salvar transcrição no Google Drive
+      setUploadStatus("📝 Salvando transcrição no Google Drive...");
+      console.log('📝 Salvando transcrição no Google Drive...')
+      const transcriptionUpload = await saveTranscriptionToDrive(
+        transcriptionResult.transcription || '',
+        user.email,
+        currentQuestionIndex + 1,
+        currentQuestion.text
+      );
+      console.log('✅ Transcrição salva no Google Drive:', transcriptionUpload.fileUrl)
+
+      // 4. Salvar resposta no banco de dados
+      setUploadStatus("💾 Salvando no banco de dados...");
+      console.log('💾 Salvando resposta no banco...')
       await UserResponse.create({
         session_id: currentSession.id,
         question_index: currentQuestionIndex + 1,
@@ -116,22 +142,24 @@ export default function Analysis() {
         question_domain: currentQuestion.domain,
         transcript_text: transcriptionResult.transcription || "Transcrição em processamento...",
         audio_duration: duration,
-        audio_file_url: file_url,
-        drive_file_id: drive_file_id,
+        audio_file_url: uploadResult.file_url,
+        drive_file_id: uploadResult.drive_file_id,
         analysis_keywords: transcriptionResult.keywords || [],
         sentiment_score: transcriptionResult.confidence_score || 0,
         emotional_tone: transcriptionResult.emotional_tone || null
       });
 
       setTranscript(transcriptionResult.transcription || "Transcrição em processamento...");
+      setUploadStatus("✅ Tudo salvo com sucesso!");
 
       setTimeout(() => {
         handleNextQuestion();
       }, 3000);
      
     } catch (error) {
-      console.error("Erro ao processar gravação:", error);
+      console.error("❌ Erro ao processar gravação:", error);
       setTranscript("Erro ao processar a gravação. Tente novamente.");
+      setUploadStatus("❌ Erro no processamento");
     }
    
     setIsProcessing(false);
@@ -142,11 +170,12 @@ export default function Analysis() {
       const nextIndex = currentQuestionIndex + 1;
       const progressPercentage = Math.round(((nextIndex + 1) / DNA_ANALYSIS_QUESTIONS.length) * 100);
       
-      console.log('Avançando para próxima pergunta:', nextIndex + 1)
+      console.log('➡️ Avançando para próxima pergunta:', nextIndex + 1)
       
       setCurrentQuestionIndex(nextIndex);
       setTranscript("");
       setAudioEnded(false);
+      setUploadStatus("");
      
       await AnalysisSession.update(currentSession.id, {
         current_question: nextIndex + 1,
@@ -154,7 +183,7 @@ export default function Analysis() {
       });
     } else {
       // Completar sessão e gerar análise
-      console.log('Sessão completa, gerando análise final...')
+      console.log('🏁 Sessão completa, gerando análise final...')
       await completeSessionAndGenerateAnalysis();
     }
   };
@@ -163,7 +192,7 @@ export default function Analysis() {
     setIsGeneratingReport(true);
    
     try {
-      console.log('Buscando todas as respostas da sessão...')
+      console.log('📊 Buscando todas as respostas da sessão...')
       // Buscar todas as respostas da sessão
       const responses = await UserResponse.filter({ session_id: currentSession.id });
      
@@ -172,22 +201,31 @@ export default function Analysis() {
         .sort((a, b) => a.question_index - b.question_index)
         .map(r => `PERGUNTA ${r.question_index}: ${r.question_text}\n\nRESPOSTA: ${r.transcript_text}`)
 
-      console.log('Gerando análise psicológica completa...')
+      console.log('🧠 Gerando análise psicológica completa...')
       // Gerar análise psicológica completa
       const analysisResult = await generateAnalysis(transcriptions);
 
-      console.log('Atualizando sessão como completa...')
+      console.log('📄 Gerando relatório final no Google Drive...')
+      // Gerar relatório final no Google Drive
+      const reportUpload = await generateFinalReportToDrive(
+        user.email,
+        analysisResult,
+        responses
+      );
+
+      console.log('💾 Atualizando sessão como completa...')
       // Atualizar sessão com análise final
       await AnalysisSession.update(currentSession.id, {
         status: "completed",
         progress_percentage: 100,
-        final_synthesis: analysisResult.analysis_document || "Análise completa gerada com sucesso."
+        final_synthesis: analysisResult.analysis_document || "Análise completa gerada com sucesso.",
+        pdf_file_url: reportUpload.fileUrl
       });
 
       setSessionCompleted(true);
      
     } catch (error) {
-      console.error("Erro ao gerar análise:", error);
+      console.error("❌ Erro ao gerar análise:", error);
     }
    
     setIsGeneratingReport(false);
@@ -221,8 +259,14 @@ export default function Analysis() {
               <p className="text-text-secondary mb-6">
                 Processando suas 108 respostas para criar seu perfil psicológico detalhado...
               </p>
-              <div className="text-sm text-text-muted">
-                Este processo pode levar alguns minutos
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-neon-blue">
+                  <HardDrive className="w-4 h-4" />
+                  <span>Salvando no Google Drive</span>
+                </div>
+                <div className="text-sm text-text-muted">
+                  Este processo pode levar alguns minutos
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -263,7 +307,16 @@ export default function Analysis() {
                     <span className="font-medium text-glow-orange">Análise Completa Gerada</span>
                   </div>
                   <p className="text-sm text-text-secondary mt-1">
-                    Relatório detalhado disponível no dashboard
+                    Relatório detalhado salvo no Google Drive
+                  </p>
+                </div>
+                <div className="metallic-elevated rounded-lg p-4 neon-border-blue">
+                  <div className="flex items-center gap-2 text-neon-blue">
+                    <CloudUpload className="w-5 h-5" />
+                    <span className="font-medium text-glow-blue">Arquivos Salvos</span>
+                  </div>
+                  <p className="text-sm text-text-secondary mt-1">
+                    Áudios e transcrições no Google Drive
                   </p>
                 </div>
                 <Button
@@ -325,6 +378,27 @@ export default function Analysis() {
             <span>{DNA_ANALYSIS_QUESTIONS.length - currentQuestionIndex - 1} perguntas restantes</span>
           </div>
         </motion.div>
+
+        {/* Upload Status */}
+        <AnimatePresence>
+          {uploadStatus && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6"
+            >
+              <Card className="glass-morphism border-0 shadow-glass border-neon-blue/30">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 text-neon-blue">
+                    <CloudUpload className="w-5 h-5" />
+                    <span className="text-sm font-medium">{uploadStatus}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Main Content */}
         <div className="space-y-8">

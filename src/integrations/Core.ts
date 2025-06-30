@@ -213,7 +213,14 @@ export async function UploadFile(request: FileUploadRequest): Promise<FileUpload
     if (!googleDriveService.isConfigured()) {
       console.error('❌ Google Drive não está configurado!')
       console.error('🔧 Configuração necessária:', googleDriveService.getConfigInfo())
-      throw new Error('Google Drive não está configurado. Verifique as variáveis de ambiente.')
+      
+      // Mostrar instruções detalhadas
+      console.error('📋 VARIÁVEIS NECESSÁRIAS NO RAILWAY:')
+      console.error('1. GOOGLE_CLIENT_SECRET=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')
+      console.error('2. GOOGLE_DRIVE_ADMIN_REFRESH_TOKEN=1//04J8fS1JSLPmxCgYIARAAGAQSNwF-L9IrunDlPllpDIs8lhC4hPQDA4vsTcd4grNSYrL6-jCA3PZWCnNkfrgI0AB-9bgMwtK-ZG4')
+      console.error('3. GOOGLE_DRIVE_PARENT_FOLDER_ID=1BeMvN-FCm751EO7JXhZi6pdpl5g7EO8q')
+      
+      throw new Error('Google Drive não está configurado. Adicione as variáveis de ambiente no Railway.')
     }
 
     // 1. Upload do arquivo de áudio

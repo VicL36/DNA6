@@ -1,4 +1,4 @@
-// Integração real com Google Drive API
+// Integração REAL com Google Drive API - DNA UP
 export interface GoogleDriveConfig {
   clientId: string
   clientSecret: string
@@ -24,7 +24,7 @@ export class GoogleDriveService {
       clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
       clientSecret: import.meta.env.GOOGLE_CLIENT_SECRET || '',
       refreshToken: import.meta.env.GOOGLE_DRIVE_ADMIN_REFRESH_TOKEN || '',
-      parentFolderId: import.meta.env.GOOGLE_DRIVE_PARENT_FOLDER_ID || ''
+      parentFolderId: import.meta.env.GOOGLE_DRIVE_PARENT_FOLDER_ID || '1BeMvN-FCm751EO7JXhZi6pdpl5g7EO8q' // ID da pasta DNA que você criou
     }
 
     console.log('🔧 Configurando Google Drive Service...')
@@ -137,7 +137,7 @@ export class GoogleDriveService {
     questionText: string
   ): Promise<DriveUploadResponse> {
     try {
-      console.log('📤 Iniciando upload para Google Drive...')
+      console.log('📤 Iniciando upload REAL para Google Drive...')
       console.log('📄 Arquivo:', file.name, 'Tamanho:', file.size, 'bytes')
 
       const accessToken = await this.getAccessToken()

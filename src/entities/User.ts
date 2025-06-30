@@ -93,7 +93,9 @@ export class User {
       const baseUrl = isLocalhost ? 'http://localhost:5173' : window.location.origin
       const redirectTo = `${baseUrl}/auth/callback`
       
-      console.log('Tentando login Google com redirect:', redirectTo)
+      console.log('🔵 Iniciando Google OAuth...')
+      console.log('🔵 Redirect URL:', redirectTo)
+      console.log('🔵 Base URL:', baseUrl)
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -107,7 +109,7 @@ export class User {
       })
       
       if (error) {
-        console.error('Erro no Google OAuth:', error)
+        console.error('❌ Erro no Google OAuth:', error)
         
         // Verificar tipos específicos de erro
         if (error.message.includes('provider is not enabled') || 
@@ -121,22 +123,31 @@ export class User {
           throw new Error('GOOGLE_OAUTH_CORS_ERROR')
         }
         
+        if (error.message.includes('Invalid provider')) {
+          throw new Error('GOOGLE_OAUTH_NOT_CONFIGURED')
+        }
+        
         throw error
       }
       
+      console.log('✅ Google OAuth iniciado com sucesso')
       return data
     } catch (error: any) {
-      console.error('Erro completo no Google OAuth:', error)
+      console.error('❌ Erro completo no Google OAuth:', error)
       
       if (error.message === 'GOOGLE_OAUTH_DISABLED') {
-        throw new Error('Login com Google não está configurado no Supabase. Configure o provider Google nas configurações de autenticação.')
+        throw new Error('Login com Google não está habilitado no Supabase. Vá em Authentication > Providers > Google e habilite.')
       }
       
       if (error.message === 'GOOGLE_OAUTH_CORS_ERROR') {
         throw new Error('Erro de CORS. Verifique se o domínio está autorizado no Google Cloud Console.')
       }
       
-      throw new Error('Erro no login com Google. Tente novamente ou use email e senha.')
+      if (error.message === 'GOOGLE_OAUTH_NOT_CONFIGURED') {
+        throw new Error('Google OAuth não está configurado. Configure Client ID e Secret no Supabase.')
+      }
+      
+      throw new Error('Erro no login com Google. Verifique a configuração do OAuth.')
     }
   }
   
@@ -160,16 +171,18 @@ export class User {
 
   static async handleAuthCallback() {
     try {
+      console.log('🔵 Processando callback de autenticação...')
+      
       const { data, error } = await supabase.auth.getSession()
       
       if (error) {
-        console.error('Erro ao obter sessão:', error)
+        console.error('❌ Erro ao obter sessão:', error)
         throw error
       }
       
       if (data.session?.user) {
         const user = data.session.user
-        console.log('Usuário autenticado:', user.email)
+        console.log('✅ Usuário autenticado:', user.email)
         
         // Create or update user profile
         const { error: upsertError } = await supabase
@@ -189,13 +202,15 @@ export class User {
           })
         
         if (upsertError) {
-          console.error('Error upserting user profile:', upsertError)
+          console.error('❌ Erro ao criar/atualizar perfil:', upsertError)
+        } else {
+          console.log('✅ Perfil criado/atualizado com sucesso')
         }
       }
       
       return data
     } catch (error) {
-      console.error('Erro no callback de autenticação:', error)
+      console.error('❌ Erro no callback de autenticação:', error)
       throw error
     }
   }

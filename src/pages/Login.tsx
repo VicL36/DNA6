@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { User } from '@/entities/User'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Rocket, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
+import { Loader2, Rocket, Eye, EyeOff, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 
@@ -20,6 +20,7 @@ export default function Login({ onLogin }: LoginProps) {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showOAuthSetup, setShowOAuthSetup] = useState(false)
 
   useEffect(() => {
     // Listen for auth state changes
@@ -82,7 +83,15 @@ export default function Login({ onLogin }: LoginProps) {
       // O listener de auth state change vai lidar com o resto
     } catch (err: any) {
       console.error('Erro no Google login:', err)
-      setError(err.message || 'Erro ao fazer login com Google')
+      
+      if (err.message.includes('não está habilitado') || 
+          err.message.includes('not enabled') ||
+          err.message.includes('OAuth')) {
+        setShowOAuthSetup(true)
+        setError('Google OAuth não está configurado. Veja as instruções abaixo.')
+      } else {
+        setError(err.message || 'Erro ao fazer login com Google')
+      }
       setGoogleLoading(false)
     }
   }
@@ -140,6 +149,63 @@ export default function Login({ onLogin }: LoginProps) {
             Descubra os padrões profundos da sua personalidade através de 108 perguntas estratégicas
           </motion.p>
         </motion.div>
+
+        {/* OAuth Setup Instructions */}
+        {showOAuthSetup && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <Card className="glass-morphism border-0 shadow-glass border-neon-orange/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-neon-orange">
+                  <AlertCircle className="w-5 h-5" />
+                  Configuração Google OAuth Necessária
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-text-secondary space-y-2">
+                  <p><strong>1. Google Cloud Console:</strong></p>
+                  <a 
+                    href="https://console.cloud.google.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-neon-blue hover:text-neon-orange transition-colors"
+                  >
+                    Criar OAuth credentials <ExternalLink className="w-3 h-3" />
+                  </a>
+                  
+                  <p className="mt-3"><strong>2. Supabase Dashboard:</strong></p>
+                  <a 
+                    href="https://supabase.com/dashboard/project/nzsyuhewavijzszlgshx/auth/providers" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-neon-blue hover:text-neon-orange transition-colors"
+                  >
+                    Habilitar Google Provider <ExternalLink className="w-3 h-3" />
+                  </a>
+                  
+                  <div className="bg-dark-surface/60 rounded-lg p-3 mt-3">
+                    <p className="text-xs text-text-muted">
+                      <strong>Redirect URL:</strong><br/>
+                      https://nzsyuhewavijzszlgshx.supabase.co/auth/v1/callback
+                    </p>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={() => setShowOAuthSetup(false)}
+                  variant="outline"
+                  size="sm"
+                  className="w-full bg-transparent border-white/20 text-text-secondary hover:border-neon-orange hover:text-neon-orange"
+                >
+                  Fechar Instruções
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Login Card */}
         <motion.div
@@ -264,6 +330,7 @@ export default function Login({ onLogin }: LoginProps) {
                     setIsLogin(!isLogin)
                     setError('')
                     setSuccess('')
+                    setShowOAuthSetup(false)
                   }}
                   className="text-sm text-text-secondary hover:text-neon-orange transition-colors"
                 >

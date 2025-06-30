@@ -4,17 +4,20 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Variáveis de ambiente Supabase não encontradas:', {
-    url: supabaseUrl ? 'OK' : 'MISSING',
-    key: supabaseAnonKey ? 'OK' : 'MISSING'
-  })
-  throw new Error('Missing Supabase environment variables')
+  console.error('🚨 ERRO: Variáveis de ambiente Supabase não encontradas!')
+  console.error('📋 CHECKLIST:')
+  console.error('1. ✅ Criar novo projeto Supabase em: https://supabase.com/dashboard')
+  console.error('2. ✅ Copiar URL e chave anônima')
+  console.error('3. ✅ Atualizar arquivo .env')
+  console.error('4. ✅ Executar migração SQL')
+  console.error('5. ✅ Configurar Google OAuth')
+  
+  throw new Error('❌ CONFIGURAÇÃO SUPABASE INCOMPLETA - Veja o console para instruções')
 }
 
-console.log('Configurando Supabase:', {
-  url: supabaseUrl,
-  keyLength: supabaseAnonKey?.length || 0
-})
+console.log('🔵 Configurando Supabase DNA UP...')
+console.log('📍 URL:', supabaseUrl)
+console.log('🔑 Key length:', supabaseAnonKey?.length || 0)
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -33,9 +36,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Test connection
 supabase.auth.getSession().then(({ data, error }) => {
   if (error) {
-    console.error('Erro na conexão Supabase:', error)
+    console.error('❌ Erro na conexão Supabase:', error)
+    console.error('🔧 Possíveis soluções:')
+    console.error('1. Verificar se o projeto Supabase existe')
+    console.error('2. Verificar se as credenciais estão corretas')
+    console.error('3. Executar a migração SQL')
   } else {
-    console.log('Conexão Supabase OK:', data.session ? 'Autenticado' : 'Não autenticado')
+    console.log('✅ Conexão Supabase OK:', data.session ? 'Autenticado' : 'Não autenticado')
   }
 })
 

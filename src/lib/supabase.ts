@@ -4,18 +4,42 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Variáveis de ambiente Supabase não encontradas:', {
+    url: supabaseUrl ? 'OK' : 'MISSING',
+    key: supabaseAnonKey ? 'OK' : 'MISSING'
+  })
   throw new Error('Missing Supabase environment variables')
 }
+
+console.log('Configurando Supabase:', {
+  url: supabaseUrl,
+  keyLength: supabaseAnonKey?.length || 0
+})
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    flowType: 'pkce'
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'dna-up-platform'
+    }
   }
 })
 
-// Database Types - Updated to use created_at instead of created_date
+// Test connection
+supabase.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error('Erro na conexão Supabase:', error)
+  } else {
+    console.log('Conexão Supabase OK:', data.session ? 'Autenticado' : 'Não autenticado')
+  }
+})
+
+// Database Types - Updated to use created_at
 export interface Database {
   public: {
     Tables: {

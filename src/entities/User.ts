@@ -88,14 +88,25 @@ export class User {
   
   static async signInWithGoogle() {
     try {
-      // Detectar ambiente e definir URL de callback correta
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      const baseUrl = isLocalhost ? 'http://localhost:5173' : window.location.origin
-      const redirectTo = `${baseUrl}/auth/callback`
+      // 🔥 CORREÇÃO CRÍTICA: Detectar ambiente corretamente
+      const isProduction = window.location.hostname === 'dnav1.up.railway.app'
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      
+      let redirectTo: string
+      
+      if (isProduction) {
+        redirectTo = 'https://dnav1.up.railway.app/auth/callback'
+      } else if (isDevelopment) {
+        redirectTo = 'http://localhost:5173/auth/callback'
+      } else {
+        // Fallback para qualquer outro domínio
+        redirectTo = `${window.location.origin}/auth/callback`
+      }
       
       console.log('🔵 Iniciando Google OAuth...')
-      console.log('🔵 Redirect URL:', redirectTo)
-      console.log('🔵 Base URL:', baseUrl)
+      console.log('🌍 Hostname:', window.location.hostname)
+      console.log('🔗 Redirect URL:', redirectTo)
+      console.log('🏠 Origin:', window.location.origin)
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

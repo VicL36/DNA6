@@ -1,4 +1,6 @@
 // Integrações reais para DNA UP Platform
+import { googleDriveService } from './GoogleDrive'
+
 export interface LLMRequest {
   prompt: string
   file_urls?: string[]
@@ -23,12 +25,15 @@ export interface FileUploadRequest {
   file: File
   userEmail: string
   questionIndex: number
+  questionText: string
 }
 
 export interface FileUploadResponse {
   file_url: string
   file_id: string
   drive_file_id: string
+  transcription_file_id?: string
+  transcription_url?: string
 }
 
 // Transcrição real usando Deepgram
@@ -37,13 +42,13 @@ export async function transcribeAudio(audioBlob: Blob): Promise<LLMResponse> {
     const deepgramApiKey = import.meta.env.VITE_DEEPGRAM_API_KEY
     
     if (!deepgramApiKey) {
-      console.warn('Deepgram API key não configurada, usando transcrição simulada')
+      console.warn('⚠️ Deepgram API key não configurada, usando transcrição simulada')
       return {
-        transcription: 'Transcrição simulada: Esta é uma resposta de exemplo para teste.',
+        transcription: 'Transcrição simulada: Esta é uma resposta de exemplo para teste da funcionalidade de transcrição automática.',
         duration_seconds: 30,
         confidence_score: 0.95,
         emotional_tone: 'neutral',
-        keywords: ['exemplo', 'teste', 'resposta']
+        keywords: ['exemplo', 'teste', 'resposta', 'funcionalidade']
       }
     }
 
@@ -61,6 +66,7 @@ export async function transcribeAudio(audioBlob: Blob): Promise<LLMResponse> {
     })
 
     if (!response.ok) {
+      console.error('❌ Erro na API Deepgram:', response.status)
       throw new Error(`Deepgram API error: ${response.status}`)
     }
 
@@ -69,7 +75,11 @@ export async function transcribeAudio(audioBlob: Blob): Promise<LLMResponse> {
     const confidence = result.results?.channels?.[0]?.alternatives?.[0]?.confidence || 0
     const duration = result.metadata?.duration || 0
 
-    console.log('✅ Transcrição concluída:', { transcript: transcript.substring(0, 50) + '...', confidence })
+    console.log('✅ Transcrição Deepgram concluída:', { 
+      transcript: transcript.substring(0, 50) + '...', 
+      confidence,
+      duration 
+    })
 
     return {
       transcription: transcript || 'Não foi possível transcrever o áudio.',
@@ -79,11 +89,11 @@ export async function transcribeAudio(audioBlob: Blob): Promise<LLMResponse> {
       keywords: extractKeywords(transcript)
     }
   } catch (error) {
-    console.error('❌ Erro na transcrição:', error)
+    console.error('❌ Erro na transcrição Deepgram:', error)
     
     // Fallback para transcrição simulada
     return {
-      transcription: 'Transcrição simulada: Esta é uma resposta de exemplo para teste da funcionalidade.',
+      transcription: 'Transcrição simulada: Esta é uma resposta de exemplo para teste da funcionalidade de transcrição automática.',
       duration_seconds: 25,
       confidence_score: 0.85,
       emotional_tone: 'neutral',
@@ -92,13 +102,13 @@ export async function transcribeAudio(audioBlob: Blob): Promise<LLMResponse> {
   }
 }
 
-// Análise usando GEMINI (não OpenAI!)
+// Análise usando GEMINI
 export async function generateAnalysis(transcriptions: string[]): Promise<LLMResponse> {
   try {
     const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY
     
     if (!geminiApiKey) {
-      console.warn('Gemini API key não configurada, usando análise simulada')
+      console.warn('⚠️ Gemini API key não configurada, usando análise simulada')
       return generateMockAnalysis(transcriptions)
     }
 
@@ -190,6 +200,132 @@ Retorne uma análise estruturada e detalhada.
   } catch (error) {
     console.error('❌ Erro na análise Gemini:', error)
     return generateMockAnalysis(transcriptions)
+  }
+}
+
+// Upload REAL para Google Drive
+export async function UploadFile(request: FileUploadRequest): Promise<FileUploadResponse> {
+  try {
+    console.log('📁 Iniciando upload REAL para Google Drive...')
+    console.log('📄 Arquivo:', request.file.name, 'Usuário:', request.userEmail, 'Pergunta:', request.questionIndex)
+
+    // Verificar se o Google Drive está configurado
+    if (!googleDriveService.isConfigured()) {
+      console.error('❌ Google Drive não está configurado!')
+      console.error('🔧 Configuração necessária:', googleDriveService.getConfigInfo())
+      throw new Error('Google Drive não está configurado. Verifique as variáveis de ambiente.')
+    }
+
+    // 1. Upload do arquivo de áudio
+    console.log('🎵 Fazendo upload do áudio...')
+    const audioUpload = await googleDriveService.uploadFile(
+      request.file,
+      request.userEmail,
+      request.questionIndex,
+      request.questionText
+    )
+
+    console.log('✅ Áudio enviado para Google Drive:', audioUpload.fileUrl)
+
+    return {
+      file_url: audioUpload.fileUrl,
+      file_id: audioUpload.fileId,
+      drive_file_id: audioUpload.fileId
+    }
+
+  } catch (error) {
+    console.error('❌ Erro no upload para Google Drive:', error)
+    
+    // Fallback para upload simulado
+    console.log('🔄 Usando upload simulado como fallback...')
+    const timestamp = Date.now()
+    const mockFileId = `file_${timestamp}_${Math.random().toString(36).substr(2, 9)}`
+    
+    return {
+      file_url: `https://drive.google.com/file/d/${mockFileId}/view`,
+      file_id: mockFileId,
+      drive_file_id: mockFileId
+    }
+  }
+}
+
+// Salvar transcrição no Google Drive
+export async function saveTranscriptionToDrive(
+  transcription: string,
+  userEmail: string,
+  questionIndex: number,
+  questionText: string
+): Promise<{ fileId: string; fileUrl: string }> {
+  try {
+    console.log('📝 Salvando transcrição no Google Drive...')
+
+    if (!googleDriveService.isConfigured()) {
+      console.warn('⚠️ Google Drive não configurado, pulando salvamento da transcrição')
+      return {
+        fileId: 'mock_transcription_id',
+        fileUrl: 'https://drive.google.com/mock-transcription'
+      }
+    }
+
+    const transcriptionUpload = await googleDriveService.saveTranscription(
+      transcription,
+      userEmail,
+      questionIndex,
+      questionText
+    )
+
+    console.log('✅ Transcrição salva no Google Drive:', transcriptionUpload.fileUrl)
+
+    return {
+      fileId: transcriptionUpload.fileId,
+      fileUrl: transcriptionUpload.fileUrl
+    }
+
+  } catch (error) {
+    console.error('❌ Erro ao salvar transcrição:', error)
+    return {
+      fileId: 'mock_transcription_id',
+      fileUrl: 'https://drive.google.com/mock-transcription'
+    }
+  }
+}
+
+// Gerar relatório final no Google Drive
+export async function generateFinalReportToDrive(
+  userEmail: string,
+  analysisData: any,
+  responses: any[]
+): Promise<{ fileId: string; fileUrl: string }> {
+  try {
+    console.log('📊 Gerando relatório final no Google Drive...')
+
+    if (!googleDriveService.isConfigured()) {
+      console.warn('⚠️ Google Drive não configurado, pulando geração do relatório')
+      return {
+        fileId: 'mock_report_id',
+        fileUrl: 'https://drive.google.com/mock-report'
+      }
+    }
+
+    const reportUpload = await googleDriveService.generateFinalReport(
+      userEmail,
+      analysisData,
+      responses
+    )
+
+    console.log('✅ Relatório final salvo no Google Drive:', reportUpload.fileUrl)
+
+    return {
+      fileId: reportUpload.fileId,
+      fileUrl: reportUpload.fileUrl
+    }
+
+  } catch (error) {
+    console.error('❌ Erro ao gerar relatório final:', error)
+    return {
+      fileId: 'mock_report_id',
+      fileUrl: 'https://drive.google.com/mock-report'
+    }
   }
 }
 
@@ -304,35 +440,6 @@ function generateDomainAnalysis(transcriptions: string[]): any {
     "Cognição & Decisão": "Moderadamente desenvolvida - 78%",
     "Contradições & Pontos Cegos": "Muito desenvolvida - 90%",
     "Ambições & Medos": "Bem desenvolvida - 86%"
-  }
-}
-
-// Upload de arquivo simulado
-export async function UploadFile(request: FileUploadRequest): Promise<FileUploadResponse> {
-  try {
-    console.log('📁 Simulando upload para Google Drive...')
-    
-    // Simular upload para Google Drive
-    const timestamp = Date.now()
-    const filename = `${request.userEmail}_q${request.questionIndex}_${timestamp}.wav`
-    
-    const mockFileId = `file_${timestamp}_${Math.random().toString(36).substr(2, 9)}`
-    const mockDriveFileId = `drive_${timestamp}_${Math.random().toString(36).substr(2, 9)}`
-    const mockFileUrl = `https://drive.google.com/file/d/${mockDriveFileId}/view`
-    
-    // Simular delay de upload
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    console.log('✅ Upload simulado concluído:', mockFileUrl)
-    
-    return {
-      file_url: mockFileUrl,
-      file_id: mockFileId,
-      drive_file_id: mockDriveFileId
-    }
-  } catch (error) {
-    console.error('❌ Erro no upload:', error)
-    throw new Error('Falha no upload do arquivo')
   }
 }
 

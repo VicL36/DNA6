@@ -47,6 +47,8 @@ export async function transcribeAudio(audioBlob: Blob): Promise<LLMResponse> {
       }
     }
 
+    console.log('🎤 Iniciando transcrição com Deepgram...')
+    
     const formData = new FormData()
     formData.append('audio', audioBlob, 'recording.wav')
 
@@ -67,6 +69,8 @@ export async function transcribeAudio(audioBlob: Blob): Promise<LLMResponse> {
     const confidence = result.results?.channels?.[0]?.alternatives?.[0]?.confidence || 0
     const duration = result.metadata?.duration || 0
 
+    console.log('✅ Transcrição concluída:', { transcript: transcript.substring(0, 50) + '...', confidence })
+
     return {
       transcription: transcript || 'Não foi possível transcrever o áudio.',
       duration_seconds: duration,
@@ -75,7 +79,7 @@ export async function transcribeAudio(audioBlob: Blob): Promise<LLMResponse> {
       keywords: extractKeywords(transcript)
     }
   } catch (error) {
-    console.error('Erro na transcrição:', error)
+    console.error('❌ Erro na transcrição:', error)
     
     // Fallback para transcrição simulada
     return {
@@ -88,15 +92,17 @@ export async function transcribeAudio(audioBlob: Blob): Promise<LLMResponse> {
   }
 }
 
-// Análise usando OpenAI/Gemini
+// Análise usando GEMINI (não OpenAI!)
 export async function generateAnalysis(transcriptions: string[]): Promise<LLMResponse> {
   try {
-    const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY
+    const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY
     
-    if (!openaiApiKey) {
-      console.warn('OpenAI API key não configurada, usando análise simulada')
+    if (!geminiApiKey) {
+      console.warn('Gemini API key não configurada, usando análise simulada')
       return generateMockAnalysis(transcriptions)
     }
+
+    console.log('🧠 Iniciando análise com Gemini AI...')
 
     const prompt = `
 # Análise Psicológica Profunda - Protocolo Clara R.
@@ -112,33 +118,65 @@ ${transcriptions.join('\n\n---\n\n')}
 3. Gere insights profundos sobre motivações e medos
 4. Forneça recomendações de desenvolvimento pessoal
 5. Mantenha tom profissional e empático
+6. Responda em português brasileiro
 
-Retorne uma análise estruturada e detalhada em português.
+## Estrutura da resposta:
+- Perfil Geral (2-3 parágrafos)
+- Características Principais (lista de 5-6 pontos)
+- Padrões Comportamentais (lista de 5-6 pontos)
+- Recomendações (2-3 parágrafos)
+
+Retorne uma análise estruturada e detalhada.
 `
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [{
-          role: 'user',
-          content: prompt
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
         }],
-        max_tokens: 4000,
-        temperature: 0.7
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 8192,
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
       })
     })
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`)
+      const errorText = await response.text()
+      console.error('❌ Erro na API Gemini:', response.status, errorText)
+      throw new Error(`Gemini API error: ${response.status}`)
     }
 
     const result = await response.json()
-    const analysisText = result.choices?.[0]?.message?.content || 'Análise não disponível'
+    const analysisText = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Análise não disponível'
+
+    console.log('✅ Análise Gemini concluída:', analysisText.substring(0, 100) + '...')
 
     return {
       analysis_document: analysisText,
@@ -150,13 +188,15 @@ Retorne uma análise estruturada e detalhada em português.
       domain_analysis: generateDomainAnalysis(transcriptions)
     }
   } catch (error) {
-    console.error('Erro na análise:', error)
+    console.error('❌ Erro na análise Gemini:', error)
     return generateMockAnalysis(transcriptions)
   }
 }
 
 // Análise simulada para fallback
 function generateMockAnalysis(transcriptions: string[]): LLMResponse {
+  console.log('🔄 Usando análise simulada (fallback)')
+  
   return {
     analysis_document: `
 # Análise Psicológica Completa - DNA UP
@@ -169,18 +209,23 @@ Com base nas ${transcriptions.length} respostas analisadas, identificamos um per
 - **Comunicação Autêntica**: Expressa-se de forma genuína e vulnerável
 - **Orientação para Crescimento**: Busca constantemente evolução pessoal e profissional
 - **Sensibilidade Emocional**: Processa experiências de forma profunda e reflexiva
+- **Pensamento Sistêmico**: Conecta experiências em padrões maiores de significado
+- **Resiliência Adaptativa**: Transforma desafios em oportunidades de crescimento
 
 ## Padrões Comportamentais
 1. Tendência a contextualizar experiências dentro de um framework maior de significado
 2. Processamento reflexivo antes de tomar decisões importantes
 3. Valorização de relacionamentos profundos e significativos
 4. Integração equilibrada entre aspectos emocionais e racionais
+5. Busca por coerência entre valores pessoais e ações
+6. Abertura para feedback e mudança quando alinhados com valores centrais
 
 ## Recomendações
-- Continue investindo em práticas de autoconhecimento
-- Desenvolva ainda mais suas habilidades de comunicação empática
-- Busque equilíbrio entre introspecção e ação prática
-- Considere explorar modalidades que integrem corpo, mente e espírito
+Continue investindo em práticas de autoconhecimento, pois sua capacidade natural de introspecção é um grande diferencial. Desenvolva ainda mais suas habilidades de comunicação empática, que já demonstram ser um ponto forte.
+
+Busque equilíbrio entre introspecção e ação prática, transformando insights em mudanças concretas. Considere explorar modalidades que integrem corpo, mente e espírito, aproveitando sua tendência natural para abordagens holísticas.
+
+Mantenha-se aberto a novas perspectivas enquanto honra seus valores fundamentais, usando sua sensibilidade emocional como guia para decisões importantes.
 `,
     personality_summary: 'Personalidade introspectiva com forte orientação para crescimento pessoal e autenticidade.',
     key_insights: [
@@ -265,6 +310,8 @@ function generateDomainAnalysis(transcriptions: string[]): any {
 // Upload de arquivo simulado
 export async function UploadFile(request: FileUploadRequest): Promise<FileUploadResponse> {
   try {
+    console.log('📁 Simulando upload para Google Drive...')
+    
     // Simular upload para Google Drive
     const timestamp = Date.now()
     const filename = `${request.userEmail}_q${request.questionIndex}_${timestamp}.wav`
@@ -276,13 +323,15 @@ export async function UploadFile(request: FileUploadRequest): Promise<FileUpload
     // Simular delay de upload
     await new Promise(resolve => setTimeout(resolve, 1000))
     
+    console.log('✅ Upload simulado concluído:', mockFileUrl)
+    
     return {
       file_url: mockFileUrl,
       file_id: mockFileId,
       drive_file_id: mockDriveFileId
     }
   } catch (error) {
-    console.error('Erro no upload:', error)
+    console.error('❌ Erro no upload:', error)
     throw new Error('Falha no upload do arquivo')
   }
 }

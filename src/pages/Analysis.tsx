@@ -6,7 +6,7 @@ import {
   generateAnalysis, 
   UploadFile, 
   saveTranscriptionToDrive,
-  generateFinalReportToDrive 
+  generateFinalReportAndDataset 
 } from "@/integrations/Core";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { DNA_ANALYSIS_QUESTIONS } from "@/data/questions";
-import { ArrowLeft, CheckCircle, Loader2, FileText, Brain, Rocket, UploadCloud as CloudUpload, HardDrive } from "lucide-react";
+import { ArrowLeft, CheckCircle, Loader2, FileText, Brain, Rocket, UploadCloud as CloudUpload, HardDrive, Database } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import AudioRecorder from "@/components/analysis/AudioRecorder";
@@ -32,6 +32,7 @@ export default function Analysis() {
   const [audioEnded, setAudioEnded] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
+  const [processingSteps, setProcessingSteps] = useState([]);
 
   useEffect(() => {
     initializeSession();
@@ -79,6 +80,16 @@ export default function Analysis() {
     setAudioEnded(true);
   };
 
+  const updateProcessingStep = (step: string, status: 'processing' | 'completed' | 'error' = 'processing') => {
+    setProcessingSteps(prev => {
+      const existing = prev.find(s => s.step === step)
+      if (existing) {
+        return prev.map(s => s.step === step ? { ...s, status } : s)
+      }
+      return [...prev, { step, status }]
+    })
+  }
+
   const handleRecordingComplete = async (audioBlob, duration) => {
     if (!currentSession) {
       console.error('❌ Nenhuma sessão ativa')
@@ -92,12 +103,14 @@ export default function Analysis() {
     })
     
     setIsProcessing(true);
-    setUploadStatus("Preparando upload...");
+    setUploadStatus("Iniciando processamento...");
+    setProcessingSteps([]);
    
     try {
       const currentQuestion = DNA_ANALYSIS_QUESTIONS[currentQuestionIndex];
       
       // 1. Upload do arquivo de áudio para Google Drive
+      updateProcessingStep("📤 Enviando áudio para Google Drive", 'processing');
       setUploadStatus("📤 Enviando áudio para Google Drive...");
       console.log('📤 Fazendo upload do áudio para Google Drive...')
       
@@ -113,15 +126,18 @@ export default function Analysis() {
       });
       
       console.log('✅ Áudio enviado para Google Drive:', uploadResult.file_url)
-      setUploadStatus("✅ Áudio salvo no Google Drive");
+      updateProcessingStep("📤 Enviando áudio para Google Drive", 'completed');
 
       // 2. Gerar transcrição
+      updateProcessingStep("🎤 Gerando transcrição", 'processing');
       setUploadStatus("🎤 Gerando transcrição...");
       console.log('🎤 Gerando transcrição...')
       const transcriptionResult = await transcribeAudio(audioBlob);
       console.log('✅ Transcrição gerada:', transcriptionResult.transcription?.substring(0, 50) + '...')
+      updateProcessingStep("🎤 Gerando transcrição", 'completed');
 
       // 3. Salvar transcrição no Google Drive
+      updateProcessingStep("📝 Salvando transcrição no Google Drive", 'processing');
       setUploadStatus("📝 Salvando transcrição no Google Drive...");
       console.log('📝 Salvando transcrição no Google Drive...')
       const transcriptionUpload = await saveTranscriptionToDrive(
@@ -131,8 +147,10 @@ export default function Analysis() {
         currentQuestion.text
       );
       console.log('✅ Transcrição salva no Google Drive:', transcriptionUpload.fileUrl)
+      updateProcessingStep("📝 Salvando transcrição no Google Drive", 'completed');
 
       // 4. Salvar resposta no banco de dados
+      updateProcessingStep("💾 Salvando no banco de dados", 'processing');
       setUploadStatus("💾 Salvando no banco de dados...");
       console.log('💾 Salvando resposta no banco...')
       await UserResponse.create({
@@ -148,6 +166,7 @@ export default function Analysis() {
         sentiment_score: transcriptionResult.confidence_score || 0,
         emotional_tone: transcriptionResult.emotional_tone || null
       });
+      updateProcessingStep("💾 Salvando no banco de dados", 'completed');
 
       setTranscript(transcriptionResult.transcription || "Transcrição em processamento...");
       setUploadStatus("✅ Tudo salvo com sucesso!");
@@ -160,6 +179,7 @@ export default function Analysis() {
       console.error("❌ Erro ao processar gravação:", error);
       setTranscript("Erro ao processar a gravação. Tente novamente.");
       setUploadStatus("❌ Erro no processamento");
+      updateProcessingStep("❌ Erro no processamento", 'error');
     }
    
     setIsProcessing(false);
@@ -176,14 +196,15 @@ export default function Analysis() {
       setTranscript("");
       setAudioEnded(false);
       setUploadStatus("");
+      setProcessingSteps([]);
      
       await AnalysisSession.update(currentSession.id, {
         current_question: nextIndex + 1,
         progress_percentage: progressPercentage
       });
     } else {
-      // Completar sessão e gerar análise
-      console.log('🏁 Sessão completa, gerando análise final...')
+      // Completar sessão e gerar análise + dataset
+      console.log('🏁 Sessão completa, gerando análise final + dataset...')
       await completeSessionAndGenerateAnalysis();
     }
   };
@@ -205,9 +226,9 @@ export default function Analysis() {
       // Gerar análise psicológica completa
       const analysisResult = await generateAnalysis(transcriptions);
 
-      console.log('📄 Gerando relatório final no Google Drive...')
-      // Gerar relatório final no Google Drive
-      const reportUpload = await generateFinalReportToDrive(
+      console.log('📄 Gerando relatório final + dataset de fine-tuning...')
+      // Gerar relatório final + dataset de fine-tuning
+      const reportAndDataset = await generateFinalReportAndDataset(
         user.email,
         analysisResult,
         responses
@@ -219,8 +240,13 @@ export default function Analysis() {
         status: "completed",
         progress_percentage: 100,
         final_synthesis: analysisResult.analysis_document || "Análise completa gerada com sucesso.",
-        pdf_file_url: reportUpload.fileUrl
+        pdf_file_url: reportAndDataset.reportFileUrl
       });
+
+      console.log('✅ Processo completo finalizado!')
+      console.log('📊 Relatório:', reportAndDataset.reportFileUrl)
+      console.log('🤖 Dataset:', reportAndDataset.datasetFileUrl)
+      console.log('🎤 Dados de voz:', reportAndDataset.voiceCloningData.length, 'arquivos')
 
       setSessionCompleted(true);
      
@@ -254,15 +280,19 @@ export default function Analysis() {
                 </div>
               </div>
               <h2 className="text-2xl font-bold text-text-primary mb-4 text-glow-orange">
-                Gerando Análise Completa
+                Gerando Análise Completa + Dataset
               </h2>
               <p className="text-text-secondary mb-6">
-                Processando suas 108 respostas para criar seu perfil psicológico detalhado...
+                Processando suas 108 respostas para criar seu perfil psicológico detalhado e dataset de fine-tuning para TinyLlama...
               </p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-neon-blue">
                   <HardDrive className="w-4 h-4" />
                   <span>Salvando no Google Drive</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-neon-orange">
+                  <Database className="w-4 h-4" />
+                  <span>Gerando dataset de fine-tuning</span>
                 </div>
                 <div className="text-sm text-text-muted">
                   Este processo pode levar alguns minutos
@@ -298,7 +328,7 @@ export default function Analysis() {
                 Análise DNA UP Concluída!
               </h2>
               <p className="text-text-secondary mb-6">
-                Suas 108 respostas foram processadas e sua análise psicológica completa foi gerada com sucesso.
+                Suas 108 respostas foram processadas e sua análise psicológica completa + dataset de fine-tuning foram gerados com sucesso.
               </p>
               <div className="space-y-3">
                 <div className="metallic-elevated rounded-lg p-4 neon-border-orange">
@@ -312,8 +342,17 @@ export default function Analysis() {
                 </div>
                 <div className="metallic-elevated rounded-lg p-4 neon-border-blue">
                   <div className="flex items-center gap-2 text-neon-blue">
+                    <Database className="w-5 h-5" />
+                    <span className="font-medium text-glow-blue">Dataset Fine-tuning</span>
+                  </div>
+                  <p className="text-sm text-text-secondary mt-1">
+                    Dataset para TinyLlama gerado e salvo
+                  </p>
+                </div>
+                <div className="metallic-elevated rounded-lg p-4 neon-border-orange">
+                  <div className="flex items-center gap-2 text-neon-orange">
                     <CloudUpload className="w-5 h-5" />
-                    <span className="font-medium text-glow-blue">Arquivos Salvos</span>
+                    <span className="font-medium text-glow-orange">Arquivos Salvos</span>
                   </div>
                   <p className="text-sm text-text-secondary mt-1">
                     Áudios e transcrições no Google Drive
@@ -378,6 +417,39 @@ export default function Analysis() {
             <span>{DNA_ANALYSIS_QUESTIONS.length - currentQuestionIndex - 1} perguntas restantes</span>
           </div>
         </motion.div>
+
+        {/* Processing Steps */}
+        <AnimatePresence>
+          {processingSteps.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6"
+            >
+              <Card className="glass-morphism border-0 shadow-glass border-neon-blue/30">
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    {processingSteps.map((step, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        {step.status === 'completed' && <CheckCircle className="w-4 h-4 text-green-400" />}
+                        {step.status === 'processing' && <Loader2 className="w-4 h-4 text-neon-blue animate-spin" />}
+                        {step.status === 'error' && <div className="w-4 h-4 bg-red-500 rounded-full" />}
+                        <span className={`text-sm font-medium ${
+                          step.status === 'completed' ? 'text-green-400' :
+                          step.status === 'processing' ? 'text-neon-blue' :
+                          'text-red-400'
+                        }`}>
+                          {step.step}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Upload Status */}
         <AnimatePresence>

@@ -1,5 +1,6 @@
-// Integrações reais para DNA UP Platform
-import { googleDriveService } from './GoogleDrive'
+// Integrações REAIS para DNA UP Platform - VERSÃO ATUALIZADA
+import { googleDriveService } from './GoogleDriveService'
+import { FineTuningDatasetGenerator } from './FineTuningDatasetGenerator'
 
 export interface LLMRequest {
   prompt: string
@@ -203,7 +204,7 @@ Retorne uma análise estruturada e detalhada.
   }
 }
 
-// Upload REAL para Google Drive
+// Upload REAL para Google Drive - VERSÃO ATUALIZADA
 export async function UploadFile(request: FileUploadRequest): Promise<FileUploadResponse> {
   try {
     console.log('📁 Iniciando upload REAL para Google Drive...')
@@ -225,7 +226,7 @@ export async function UploadFile(request: FileUploadRequest): Promise<FileUpload
 
     // 1. Upload do arquivo de áudio
     console.log('🎵 Fazendo upload do áudio...')
-    const audioUpload = await googleDriveService.uploadFile(
+    const audioUpload = await googleDriveService.uploadAudioFile(
       request.file,
       request.userEmail,
       request.questionIndex,
@@ -256,7 +257,7 @@ export async function UploadFile(request: FileUploadRequest): Promise<FileUpload
   }
 }
 
-// Salvar transcrição no Google Drive
+// Salvar transcrição no Google Drive - VERSÃO ATUALIZADA
 export async function saveTranscriptionToDrive(
   transcription: string,
   userEmail: string,
@@ -274,7 +275,7 @@ export async function saveTranscriptionToDrive(
       }
     }
 
-    const transcriptionUpload = await googleDriveService.saveTranscription(
+    const transcriptionUpload = await googleDriveService.uploadTranscription(
       transcription,
       userEmail,
       questionIndex,
@@ -297,41 +298,78 @@ export async function saveTranscriptionToDrive(
   }
 }
 
-// Gerar relatório final no Google Drive
-export async function generateFinalReportToDrive(
+// Gerar relatório final + Dataset de Fine-tuning - NOVA FUNCIONALIDADE
+export async function generateFinalReportAndDataset(
   userEmail: string,
   analysisData: any,
   responses: any[]
-): Promise<{ fileId: string; fileUrl: string }> {
+): Promise<{ 
+  reportFileId: string; 
+  reportFileUrl: string;
+  datasetFileId: string;
+  datasetFileUrl: string;
+  voiceCloningData: any[];
+}> {
   try {
-    console.log('📊 Gerando relatório final no Google Drive...')
+    console.log('📊 Gerando relatório final + dataset de fine-tuning...')
 
     if (!googleDriveService.isConfigured()) {
-      console.warn('⚠️ Google Drive não configurado, pulando geração do relatório')
+      console.warn('⚠️ Google Drive não configurado, pulando geração completa')
       return {
-        fileId: 'mock_report_id',
-        fileUrl: 'https://drive.google.com/mock-report'
+        reportFileId: 'mock_report_id',
+        reportFileUrl: 'https://drive.google.com/mock-report',
+        datasetFileId: 'mock_dataset_id',
+        datasetFileUrl: 'https://drive.google.com/mock-dataset',
+        voiceCloningData: []
       }
     }
 
-    const reportUpload = await googleDriveService.generateFinalReport(
+    // 1. Gerar relatório final
+    console.log('📄 Gerando relatório final...')
+    const reportUpload = await googleDriveService.uploadFinalReport(
       userEmail,
       analysisData,
       responses
     )
 
-    console.log('✅ Relatório final salvo no Google Drive:', reportUpload.fileUrl)
+    // 2. Gerar dataset de fine-tuning para TinyLlama
+    console.log('🤖 Gerando dataset de fine-tuning...')
+    const dataset = FineTuningDatasetGenerator.generateDataset(
+      userEmail,
+      responses,
+      analysisData
+    )
+
+    const datasetUpload = await googleDriveService.uploadFineTuningDataset(
+      dataset,
+      userEmail
+    )
+
+    // 3. Preparar dados para clonagem de voz (próxima etapa)
+    console.log('🎤 Preparando dados para clonagem de voz...')
+    const voiceCloningData = FineTuningDatasetGenerator.generateVoiceCloningData(responses)
+
+    console.log('✅ Relatório e dataset gerados com sucesso!')
+    console.log(`📊 Relatório: ${reportUpload.fileUrl}`)
+    console.log(`🤖 Dataset: ${datasetUpload.fileUrl}`)
+    console.log(`🎤 Dados de voz: ${voiceCloningData.length} arquivos preparados`)
 
     return {
-      fileId: reportUpload.fileId,
-      fileUrl: reportUpload.fileUrl
+      reportFileId: reportUpload.fileId,
+      reportFileUrl: reportUpload.fileUrl,
+      datasetFileId: datasetUpload.fileId,
+      datasetFileUrl: datasetUpload.fileUrl,
+      voiceCloningData: voiceCloningData
     }
 
   } catch (error) {
-    console.error('❌ Erro ao gerar relatório final:', error)
+    console.error('❌ Erro ao gerar relatório e dataset:', error)
     return {
-      fileId: 'mock_report_id',
-      fileUrl: 'https://drive.google.com/mock-report'
+      reportFileId: 'mock_report_id',
+      reportFileUrl: 'https://drive.google.com/mock-report',
+      datasetFileId: 'mock_dataset_id',
+      datasetFileUrl: 'https://drive.google.com/mock-dataset',
+      voiceCloningData: []
     }
   }
 }

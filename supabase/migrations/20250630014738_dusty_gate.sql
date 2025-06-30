@@ -1,23 +1,7 @@
--- ===== SCHEMA COMPLETO DNA UP PLATFORM =====
--- Migração única e definitiva para criar todas as tabelas
-
-/*
-  # Schema Completo DNA UP - Deep Narrative Analysis
-
-  ## Tabelas Principais
-  - users - Perfis de usuários
-  - analysis_sessions - Sessões de análise
-  - user_responses - Respostas dos usuários
-
-  ## Segurança
-  - RLS habilitado em todas as tabelas
-  - Políticas de acesso granulares
-  - Triggers para estatísticas automáticas
-
-  ## Índices
-  - Otimização para consultas frequentes
-  - Performance melhorada
-*/
+-- ===== DNA UP PLATFORM - SCHEMA COMPLETO =====
+-- Criado em: 2025-06-30
+-- Versão: 1.0.0
+-- Descrição: Schema completo para análise psicológica com 108 perguntas
 
 -- ===== HABILITAR EXTENSÕES =====
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -159,28 +143,13 @@ CREATE TRIGGER trigger_update_completed_sessions
   FOR EACH ROW
   EXECUTE FUNCTION update_completed_sessions();
 
--- ===== INSERIR DADOS DE TESTE (OPCIONAL) =====
--- Descomente para inserir dados de teste
-/*
-INSERT INTO users (email, full_name, total_sessions, completed_sessions) VALUES 
-('teste@dnaup.com', 'Usuário Teste', 2, 1),
-('demo@dnaup.com', 'Demo User', 1, 0)
-ON CONFLICT (email) DO NOTHING;
-
-INSERT INTO analysis_sessions (user_email, status, current_question, progress_percentage) VALUES
-('teste@dnaup.com', 'completed', 108, 100),
-('teste@dnaup.com', 'active', 45, 42),
-('demo@dnaup.com', 'active', 12, 11)
-ON CONFLICT DO NOTHING;
-*/
-
 -- ===== VERIFICAÇÃO FINAL =====
 -- Verificar se todas as tabelas foram criadas
 SELECT 
   schemaname,
   tablename,
   tableowner,
-  'Tabela criada com sucesso! ✅' as status
+  '✅ Tabela criada com sucesso!' as status
 FROM pg_tables 
 WHERE schemaname = 'public' 
   AND tablename IN ('users', 'analysis_sessions', 'user_responses');
@@ -189,7 +158,7 @@ WHERE schemaname = 'public'
 SELECT 
   schemaname,
   tablename,
-  CASE WHEN rowsecurity THEN 'RLS HABILITADO ✅' ELSE 'RLS DESABILITADO ❌' END as security_status
+  CASE WHEN rowsecurity THEN '✅ RLS HABILITADO' ELSE '❌ RLS DESABILITADO' END as security_status
 FROM pg_tables 
 WHERE schemaname = 'public' 
   AND tablename IN ('users', 'analysis_sessions', 'user_responses');
@@ -199,7 +168,7 @@ SELECT
   schemaname,
   tablename,
   policyname,
-  'Política ativa ✅' as policy_status
+  '✅ Política ativa' as policy_status
 FROM pg_policies 
 WHERE schemaname = 'public';
 

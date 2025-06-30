@@ -7,17 +7,26 @@ type UserResponseUpdate = Database['public']['Tables']['user_responses']['Update
 
 export class UserResponseEntity {
   static async create(data: UserResponseInsert): Promise<UserResponse> {
+    console.log('Criando resposta do usuário:', data)
+    
     const { data: response, error } = await supabase
       .from('user_responses')
       .insert(data)
       .select()
       .single()
     
-    if (error) throw error
+    if (error) {
+      console.error('Erro ao criar resposta:', error)
+      throw error
+    }
+    
+    console.log('Resposta criada com sucesso:', response)
     return response
   }
   
   static async update(id: string, data: UserResponseUpdate): Promise<UserResponse> {
+    console.log('Atualizando resposta:', id, data)
+    
     const { data: response, error } = await supabase
       .from('user_responses')
       .update(data)
@@ -25,18 +34,30 @@ export class UserResponseEntity {
       .select()
       .single()
     
-    if (error) throw error
+    if (error) {
+      console.error('Erro ao atualizar resposta:', error)
+      throw error
+    }
+    
+    console.log('Resposta atualizada:', response)
     return response
   }
   
   static async findById(id: string): Promise<UserResponse | null> {
+    console.log('Buscando resposta por ID:', id)
+    
     const { data, error } = await supabase
       .from('user_responses')
       .select('*')
       .eq('id', id)
       .single()
     
-    if (error && error.code !== 'PGRST116') throw error
+    if (error && error.code !== 'PGRST116') {
+      console.error('Erro ao buscar resposta:', error)
+      throw error
+    }
+    
+    console.log('Resposta encontrada:', data)
     return data
   }
   
@@ -45,6 +66,8 @@ export class UserResponseEntity {
     orderBy?: string,
     limit?: number
   ): Promise<UserResponse[]> {
+    console.log('Filtrando respostas:', filters, orderBy, limit)
+    
     let query = supabase.from('user_responses').select('*')
     
     Object.entries(filters).forEach(([key, value]) => {
@@ -62,7 +85,13 @@ export class UserResponseEntity {
     }
     
     const { data, error } = await query
-    if (error) throw error
+    
+    if (error) {
+      console.error('Erro ao filtrar respostas:', error)
+      throw error
+    }
+    
+    console.log('Respostas filtradas:', data?.length || 0)
     return data || []
   }
   
@@ -71,11 +100,18 @@ export class UserResponseEntity {
   }
   
   static async delete(id: string): Promise<void> {
+    console.log('Deletando resposta:', id)
+    
     const { error } = await supabase
       .from('user_responses')
       .delete()
       .eq('id', id)
     
-    if (error) throw error
+    if (error) {
+      console.error('Erro ao deletar resposta:', error)
+      throw error
+    }
+    
+    console.log('Resposta deletada com sucesso')
   }
 }

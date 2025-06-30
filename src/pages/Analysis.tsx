@@ -39,23 +39,26 @@ export default function Analysis() {
 
   const initializeSession = async () => {
     try {
+      console.log('Inicializando sessão de análise...')
       const currentUser = await User.me();
       setUser(currentUser);
      
       // Verificar se existe sessão ativa
       const activeSessions = await AnalysisSession.filter(
         { user_email: currentUser.email, status: 'active' },
-        '-created_date',
+        '-created_at',
         1
       );
 
       if (activeSessions.length > 0) {
         // Continuar sessão existente
         const session = activeSessions[0];
+        console.log('Continuando sessão existente:', session)
         setCurrentSession(session);
         setCurrentQuestionIndex(session.current_question - 1);
       } else {
         // Criar nova sessão
+        console.log('Criando nova sessão...')
         const session = await AnalysisSession.create({
           user_email: currentUser.email,
           status: "active",
@@ -63,20 +66,26 @@ export default function Analysis() {
           total_questions: DNA_ANALYSIS_QUESTIONS.length,
           progress_percentage: 0
         });
+        console.log('Nova sessão criada:', session)
         setCurrentSession(session);
       }
     } catch (error) {
-      console.error("Error initializing session:", error);
+      console.error("Erro ao inicializar sessão:", error);
     }
   };
 
   const handleAudioEnded = () => {
+    console.log('Áudio da pergunta terminou')
     setAudioEnded(true);
   };
 
   const handleRecordingComplete = async (audioBlob, duration) => {
-    if (!currentSession) return;
+    if (!currentSession) {
+      console.error('Nenhuma sessão ativa')
+      return;
+    }
    
+    console.log('Processando gravação...', { duration, sessionId: currentSession.id })
     setIsProcessing(true);
    
     try {
@@ -87,16 +96,19 @@ export default function Analysis() {
         type: 'audio/wav'
       });
      
+      console.log('Fazendo upload do arquivo...')
       const { file_url, drive_file_id } = await UploadFile({ 
         file: audioFile,
         userEmail: user.email,
         questionIndex: currentQuestionIndex + 1
       });
      
-      // Gerar transcrição usando Deepgram
+      // Gerar transcrição
+      console.log('Gerando transcrição...')
       const transcriptionResult = await transcribeAudio(audioBlob);
 
       // Salvar resposta no banco de dados
+      console.log('Salvando resposta no banco...')
       await UserResponse.create({
         session_id: currentSession.id,
         question_index: currentQuestionIndex + 1,
@@ -118,7 +130,7 @@ export default function Analysis() {
       }, 3000);
      
     } catch (error) {
-      console.error("Error processing recording:", error);
+      console.error("Erro ao processar gravação:", error);
       setTranscript("Erro ao processar a gravação. Tente novamente.");
     }
    
@@ -130,6 +142,8 @@ export default function Analysis() {
       const nextIndex = currentQuestionIndex + 1;
       const progressPercentage = Math.round(((nextIndex + 1) / DNA_ANALYSIS_QUESTIONS.length) * 100);
       
+      console.log('Avançando para próxima pergunta:', nextIndex + 1)
+      
       setCurrentQuestionIndex(nextIndex);
       setTranscript("");
       setAudioEnded(false);
@@ -140,6 +154,7 @@ export default function Analysis() {
       });
     } else {
       // Completar sessão e gerar análise
+      console.log('Sessão completa, gerando análise final...')
       await completeSessionAndGenerateAnalysis();
     }
   };
@@ -148,6 +163,7 @@ export default function Analysis() {
     setIsGeneratingReport(true);
    
     try {
+      console.log('Buscando todas as respostas da sessão...')
       // Buscar todas as respostas da sessão
       const responses = await UserResponse.filter({ session_id: currentSession.id });
      
@@ -156,9 +172,11 @@ export default function Analysis() {
         .sort((a, b) => a.question_index - b.question_index)
         .map(r => `PERGUNTA ${r.question_index}: ${r.question_text}\n\nRESPOSTA: ${r.transcript_text}`)
 
+      console.log('Gerando análise psicológica completa...')
       // Gerar análise psicológica completa
       const analysisResult = await generateAnalysis(transcriptions);
 
+      console.log('Atualizando sessão como completa...')
       // Atualizar sessão com análise final
       await AnalysisSession.update(currentSession.id, {
         status: "completed",
@@ -169,7 +187,7 @@ export default function Analysis() {
       setSessionCompleted(true);
      
     } catch (error) {
-      console.error("Error generating analysis:", error);
+      console.error("Erro ao gerar análise:", error);
     }
    
     setIsGeneratingReport(false);
@@ -233,7 +251,7 @@ export default function Analysis() {
                 </div>
               </div>
               <h2 className="text-2xl font-bold text-text-primary mb-4 text-glow-blue">
-                Análise DNA Concluída!
+                Análise DNA UP Concluída!
               </h2>
               <p className="text-text-secondary mb-6">
                 Suas 108 respostas foram processadas e sua análise psicológica completa foi gerada com sucesso.
@@ -278,7 +296,7 @@ export default function Analysis() {
           </Button>
          
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-text-primary text-glow-orange">Análise DNA Completa</h1>
+            <h1 className="text-2xl font-bold text-text-primary text-glow-orange">Análise DNA UP Completa</h1>
             <p className="text-text-secondary">
               Pergunta {currentQuestionIndex + 1} de {DNA_ANALYSIS_QUESTIONS.length}
             </p>

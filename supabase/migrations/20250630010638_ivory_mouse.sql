@@ -1,26 +1,32 @@
 /*
   # Esquema Completo DNA UP - Deep Narrative Analysis
-
-  1. Tabelas Principais
-    - `users` - Perfis de usuários
-    - `analysis_sessions` - Sessões de análise
-    - `user_responses` - Respostas dos usuários
-
-  2. Segurança
-    - RLS habilitado em todas as tabelas
-    - Políticas de acesso granulares
-    - Triggers para estatísticas automáticas
-
-  3. Índices
-    - Otimização para consultas frequentes
-    - Performance melhorada
+  
+  ## Tabelas Principais
+  - users - Perfis de usuários
+  - analysis_sessions - Sessões de análise
+  - user_responses - Respostas dos usuários
+  
+  ## Segurança
+  - RLS habilitado em todas as tabelas
+  - Políticas de acesso granulares
+  - Triggers para estatísticas automáticas
+  
+  ## Índices
+  - Otimização para consultas frequentes
+  - Performance melhorada
 */
 
--- Habilitar extensões necessárias
+-- ===== HABILITAR EXTENSÕES =====
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ===== LIMPAR TABELAS EXISTENTES (SE HOUVER) =====
+DROP TABLE IF EXISTS user_responses CASCADE;
+DROP TABLE IF EXISTS analysis_sessions CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
 -- ===== TABELA DE USUÁRIOS =====
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   email TEXT UNIQUE NOT NULL,
@@ -34,7 +40,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- ===== TABELA DE SESSÕES DE ANÁLISE =====
-CREATE TABLE IF NOT EXISTS analysis_sessions (
+CREATE TABLE analysis_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   user_email TEXT NOT NULL,
@@ -48,7 +54,7 @@ CREATE TABLE IF NOT EXISTS analysis_sessions (
 );
 
 -- ===== TABELA DE RESPOSTAS DOS USUÁRIOS =====
-CREATE TABLE IF NOT EXISTS user_responses (
+CREATE TABLE user_responses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   session_id UUID REFERENCES analysis_sessions(id) ON DELETE CASCADE,
@@ -70,10 +76,6 @@ ALTER TABLE analysis_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_responses ENABLE ROW LEVEL SECURITY;
 
 -- ===== POLÍTICAS DE SEGURANÇA PARA USERS =====
-DROP POLICY IF EXISTS "Users can read own data" ON users;
-DROP POLICY IF EXISTS "Users can update own data" ON users;
-DROP POLICY IF EXISTS "Users can insert own data" ON users;
-
 CREATE POLICY "Users can read own data" ON users
   FOR SELECT USING (auth.jwt() ->> 'email' = email);
 
@@ -84,14 +86,10 @@ CREATE POLICY "Users can insert own data" ON users
   FOR INSERT WITH CHECK (auth.jwt() ->> 'email' = email);
 
 -- ===== POLÍTICAS DE SEGURANÇA PARA ANALYSIS_SESSIONS =====
-DROP POLICY IF EXISTS "Users can access own sessions" ON analysis_sessions;
-
 CREATE POLICY "Users can access own sessions" ON analysis_sessions
   FOR ALL USING (auth.jwt() ->> 'email' = user_email);
 
 -- ===== POLÍTICAS DE SEGURANÇA PARA USER_RESPONSES =====
-DROP POLICY IF EXISTS "Users can access own responses" ON user_responses;
-
 CREATE POLICY "Users can access own responses" ON user_responses
   FOR ALL USING (
     session_id IN (
@@ -101,13 +99,16 @@ CREATE POLICY "Users can access own responses" ON user_responses
   );
 
 -- ===== ÍNDICES PARA PERFORMANCE =====
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_analysis_sessions_user_email ON analysis_sessions(user_email);
-CREATE INDEX IF NOT EXISTS idx_analysis_sessions_status ON analysis_sessions(status);
-CREATE INDEX IF NOT EXISTS idx_analysis_sessions_created_at ON analysis_sessions(created_at);
-CREATE INDEX IF NOT EXISTS idx_user_responses_session_id ON user_responses(session_id);
-CREATE INDEX IF NOT EXISTS idx_user_responses_question_index ON user_responses(question_index);
-CREATE INDEX IF NOT EXISTS idx_user_responses_created_at ON user_responses(created_at);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_created_at ON users(created_at);
+
+CREATE INDEX idx_analysis_sessions_user_email ON analysis_sessions(user_email);
+CREATE INDEX idx_analysis_sessions_status ON analysis_sessions(status);
+CREATE INDEX idx_analysis_sessions_created_at ON analysis_sessions(created_at);
+
+CREATE INDEX idx_user_responses_session_id ON user_responses(session_id);
+CREATE INDEX idx_user_responses_question_index ON user_responses(question_index);
+CREATE INDEX idx_user_responses_created_at ON user_responses(created_at);
 
 -- ===== FUNÇÃO PARA ATUALIZAR ESTATÍSTICAS DO USUÁRIO =====
 CREATE OR REPLACE FUNCTION update_user_stats()
@@ -145,9 +146,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ===== TRIGGERS PARA ESTATÍSTICAS AUTOMÁTICAS =====
-DROP TRIGGER IF EXISTS trigger_update_user_stats ON user_responses;
-DROP TRIGGER IF EXISTS trigger_update_completed_sessions ON analysis_sessions;
-
 CREATE TRIGGER trigger_update_user_stats
   AFTER INSERT ON user_responses
   FOR EACH ROW
@@ -159,8 +157,46 @@ CREATE TRIGGER trigger_update_completed_sessions
   EXECUTE FUNCTION update_completed_sessions();
 
 -- ===== INSERIR DADOS DE TESTE (OPCIONAL) =====
--- Descomente as linhas abaixo se quiser dados de teste
+-- Descomente para inserir dados de teste
+/*
+INSERT INTO users (email, full_name, total_sessions, completed_sessions) VALUES 
+('teste@dnaup.com', 'Usuário Teste', 2, 1),
+('demo@dnaup.com', 'Demo User', 1, 0)
+ON CONFLICT (email) DO NOTHING;
 
--- INSERT INTO users (email, full_name) VALUES 
--- ('teste@dnaup.com', 'Usuário Teste')
--- ON CONFLICT (email) DO NOTHING;
+INSERT INTO analysis_sessions (user_email, status, current_question, progress_percentage) VALUES
+('teste@dnaup.com', 'completed', 108, 100),
+('teste@dnaup.com', 'active', 45, 42),
+('demo@dnaup.com', 'active', 12, 11)
+ON CONFLICT DO NOTHING;
+*/
+
+-- ===== VERIFICAÇÃO FINAL =====
+-- Verificar se todas as tabelas foram criadas
+SELECT 
+  schemaname,
+  tablename,
+  tableowner
+FROM pg_tables 
+WHERE schemaname = 'public' 
+  AND tablename IN ('users', 'analysis_sessions', 'user_responses');
+
+-- Verificar se RLS está habilitado
+SELECT 
+  schemaname,
+  tablename,
+  rowsecurity
+FROM pg_tables 
+WHERE schemaname = 'public' 
+  AND tablename IN ('users', 'analysis_sessions', 'user_responses');
+
+-- Verificar políticas criadas
+SELECT 
+  schemaname,
+  tablename,
+  policyname,
+  permissive,
+  roles,
+  cmd
+FROM pg_policies 
+WHERE schemaname = 'public';

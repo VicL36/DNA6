@@ -7,17 +7,26 @@ type AnalysisSessionUpdate = Database['public']['Tables']['analysis_sessions']['
 
 export class AnalysisSessionEntity {
   static async create(data: AnalysisSessionInsert): Promise<AnalysisSession> {
+    console.log('Criando sessão de análise:', data)
+    
     const { data: session, error } = await supabase
       .from('analysis_sessions')
       .insert(data)
       .select()
       .single()
     
-    if (error) throw error
+    if (error) {
+      console.error('Erro ao criar sessão:', error)
+      throw error
+    }
+    
+    console.log('Sessão criada com sucesso:', session)
     return session
   }
   
   static async update(id: string, data: AnalysisSessionUpdate): Promise<AnalysisSession> {
+    console.log('Atualizando sessão:', id, data)
+    
     const { data: session, error } = await supabase
       .from('analysis_sessions')
       .update(data)
@@ -25,18 +34,30 @@ export class AnalysisSessionEntity {
       .select()
       .single()
     
-    if (error) throw error
+    if (error) {
+      console.error('Erro ao atualizar sessão:', error)
+      throw error
+    }
+    
+    console.log('Sessão atualizada:', session)
     return session
   }
   
   static async findById(id: string): Promise<AnalysisSession | null> {
+    console.log('Buscando sessão por ID:', id)
+    
     const { data, error } = await supabase
       .from('analysis_sessions')
       .select('*')
       .eq('id', id)
       .single()
     
-    if (error && error.code !== 'PGRST116') throw error
+    if (error && error.code !== 'PGRST116') {
+      console.error('Erro ao buscar sessão:', error)
+      throw error
+    }
+    
+    console.log('Sessão encontrada:', data)
     return data
   }
   
@@ -45,6 +66,8 @@ export class AnalysisSessionEntity {
     orderBy?: string,
     limit?: number
   ): Promise<AnalysisSession[]> {
+    console.log('Filtrando sessões:', filters, orderBy, limit)
+    
     let query = supabase.from('analysis_sessions').select('*')
     
     Object.entries(filters).forEach(([key, value]) => {
@@ -62,7 +85,13 @@ export class AnalysisSessionEntity {
     }
     
     const { data, error } = await query
-    if (error) throw error
+    
+    if (error) {
+      console.error('Erro ao filtrar sessões:', error)
+      throw error
+    }
+    
+    console.log('Sessões filtradas:', data?.length || 0)
     return data || []
   }
   
@@ -71,11 +100,18 @@ export class AnalysisSessionEntity {
   }
   
   static async delete(id: string): Promise<void> {
+    console.log('Deletando sessão:', id)
+    
     const { error } = await supabase
       .from('analysis_sessions')
       .delete()
       .eq('id', id)
     
-    if (error) throw error
+    if (error) {
+      console.error('Erro ao deletar sessão:', error)
+      throw error
+    }
+    
+    console.log('Sessão deletada com sucesso')
   }
 }

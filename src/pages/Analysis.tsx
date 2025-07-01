@@ -109,12 +109,12 @@ export default function Analysis() {
     try {
       const currentQuestion = DNA_ANALYSIS_QUESTIONS[currentQuestionIndex];
       
-      // 1. Upload IMEDIATO do arquivo de áudio para Google Drive
+      // 1. Upload do arquivo de áudio para Google Drive
       updateProcessingStep("📤 Enviando áudio para Google Drive", 'processing');
       setUploadStatus("📤 Enviando áudio para Google Drive...");
-      console.log('📤 UPLOAD IMEDIATO: Fazendo upload do áudio para Google Drive...')
+      console.log('📤 Fazendo upload do áudio para Google Drive...')
       
-      const audioFile = new File([audioBlob], `Q${(currentQuestionIndex + 1).toString().padStart(3, '0')}_${user.email}_${Date.now()}.wav`, {
+      const audioFile = new File([audioBlob], `${user.email}_q${currentQuestionIndex + 1}_${Date.now()}.wav`, {
         type: 'audio/wav'
       });
      
@@ -125,7 +125,7 @@ export default function Analysis() {
         questionText: currentQuestion.text
       });
       
-      console.log('✅ ÁUDIO ENVIADO IMEDIATAMENTE para Google Drive:', uploadResult.file_url)
+      console.log('✅ Áudio enviado para Google Drive:', uploadResult.file_url)
       updateProcessingStep("📤 Enviando áudio para Google Drive", 'completed');
 
       // 2. Gerar transcrição
@@ -136,17 +136,17 @@ export default function Analysis() {
       console.log('✅ Transcrição gerada:', transcriptionResult.transcription?.substring(0, 50) + '...')
       updateProcessingStep("🎤 Gerando transcrição", 'completed');
 
-      // 3. Salvar IMEDIATAMENTE a transcrição no Google Drive
+      // 3. Salvar transcrição no Google Drive
       updateProcessingStep("📝 Salvando transcrição no Google Drive", 'processing');
       setUploadStatus("📝 Salvando transcrição no Google Drive...");
-      console.log('📝 SALVAMENTO IMEDIATO: Salvando transcrição no Google Drive...')
+      console.log('📝 Salvando transcrição no Google Drive...')
       const transcriptionUpload = await saveTranscriptionToDrive(
         transcriptionResult.transcription || '',
         user.email,
         currentQuestionIndex + 1,
         currentQuestion.text
       );
-      console.log('✅ TRANSCRIÇÃO SALVA IMEDIATAMENTE no Google Drive:', transcriptionUpload.fileUrl)
+      console.log('✅ Transcrição salva no Google Drive:', transcriptionUpload.fileUrl)
       updateProcessingStep("📝 Salvando transcrição no Google Drive", 'completed');
 
       // 4. Salvar resposta no banco de dados
@@ -169,9 +169,27 @@ export default function Analysis() {
       updateProcessingStep("💾 Salvando no banco de dados", 'completed');
 
       setTranscript(transcriptionResult.transcription || "Transcrição em processamento...");
-      setUploadStatus("✅ Áudio e transcrição salvos no Google Drive!");
+      setUploadStatus("✅ Tudo salvo com sucesso!");
 
-      // 5. Mostrar confirmação visual por 3 segundos
+      // Gerar relatório final + Dataset de Fine-tuning após cada resposta
+      await generateFinalReportAndDataset(
+        user.email,
+        transcriptionResult, // Usar a transcrição atual para análise
+        [{ // Criar um array com a resposta atual para o dataset
+          question_index: currentQuestionIndex + 1,
+          question_text: currentQuestion.text,
+          question_domain: currentQuestion.domain,
+          transcript_text: transcriptionResult.transcription || "Transcrição em processamento...",
+          audio_duration: duration,
+          audio_file_url: uploadResult.file_url,
+          drive_file_id: uploadResult.drive_file_id,
+          analysis_keywords: transcriptionResult.keywords || [],
+          sentiment_score: transcriptionResult.confidence_score || 0,
+          emotional_tone: transcriptionResult.emotional_tone || null,
+          created_at: new Date().toISOString()
+        }]
+      );
+
       setTimeout(() => {
         handleNextQuestion();
       }, 3000);
@@ -204,7 +222,7 @@ export default function Analysis() {
         progress_percentage: progressPercentage
       });
     } else {
-      // Completar sessão e gerar análise final + dataset
+      // Completar sessão e gerar análise + dataset
       console.log('🏁 Sessão completa, gerando análise final + dataset...')
       await completeSessionAndGenerateAnalysis();
     }
@@ -289,7 +307,7 @@ export default function Analysis() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-neon-blue">
                   <HardDrive className="w-4 h-4" />
-                  <span>Compilando dados do Google Drive</span>
+                  <span>Salvando no Google Drive</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-neon-orange">
                   <Database className="w-4 h-4" />
@@ -353,10 +371,10 @@ export default function Analysis() {
                 <div className="metallic-elevated rounded-lg p-4 neon-border-orange">
                   <div className="flex items-center gap-2 text-neon-orange">
                     <CloudUpload className="w-5 h-5" />
-                    <span className="font-medium text-glow-orange">108 Arquivos Salvos</span>
+                    <span className="font-medium text-glow-orange">Arquivos Salvos</span>
                   </div>
                   <p className="text-sm text-text-secondary mt-1">
-                    Todos os áudios e transcrições no Google Drive
+                    Áudios e transcrições no Google Drive
                   </p>
                 </div>
                 <Button

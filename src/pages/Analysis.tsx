@@ -5,7 +5,7 @@ import {
   transcribeAudio, 
   generateAnalysis, 
   UploadFile, 
-  saveTranscriptionToDrive,
+  saveTranscriptionToStorage,
   generateFinalReportAndDataset 
 } from "@/integrations/Core";
 import { Button } from "@/components/ui/button";
@@ -90,6 +90,103 @@ export default function Analysis() {
     })
   }
 
+  const handleTextResponse = async (textResponse: string) => {
+    if (!currentSession) {
+      console.error('❌ Nenhuma sessão ativa')
+      return;
+    }
+   
+    console.log('📝 Processando resposta de texto...', { 
+      textLength: textResponse.length,
+      sessionId: currentSession.id,
+      questionIndex: currentQuestionIndex + 1
+    })
+    
+    setIsProcessing(true);
+    setUploadStatus("Iniciando processamento...");
+    setProcessingSteps([]);
+   
+    try {
+      const currentQuestion = DNA_ANALYSIS_QUESTIONS[currentQuestionIndex];
+      
+      // 1. Salvar transcrição no Supabase Storage (usando o texto como transcrição)
+      updateProcessingStep("📝 Salvando resposta no Supabase Storage", 'processing');
+      setUploadStatus("📝 Salvando resposta no Supabase Storage...");
+      console.log('📝 Salvando resposta de texto no Supabase Storage...')
+      const transcriptionUpload = await saveTranscriptionToStorage(
+        textResponse,
+        user.email,
+        currentQuestionIndex + 1,
+        currentQuestion.text
+      );
+      console.log('✅ Resposta salva no Supabase Storage:', transcriptionUpload.fileUrl)
+      updateProcessingStep("📝 Salvando resposta no Supabase Storage", 'completed');
+
+      // 2. Salvar resposta no banco de dados
+      updateProcessingStep("💾 Salvando no banco de dados", 'processing');
+      setUploadStatus("💾 Salvando no banco de dados...");
+      console.log('💾 Salvando resposta no banco...')
+      await UserResponse.create({
+        session_id: currentSession.id,
+        question_index: currentQuestionIndex + 1,
+        question_text: currentQuestion.text,
+        question_domain: currentQuestion.domain,
+        transcript_text: textResponse,
+        audio_duration: null, // Não há áudio para resposta de texto
+        audio_file_url: null, // Não há áudio para resposta de texto
+        drive_file_id: transcriptionUpload.fileId,
+        analysis_keywords: extractKeywordsFromText(textResponse),
+        sentiment_score: 0.9, // Score padrão para texto
+        emotional_tone: 'text_response'
+      });
+      updateProcessingStep("💾 Salvando no banco de dados", 'completed');
+
+      setTranscript(textResponse);
+      setUploadStatus("✅ Tudo salvo com sucesso!");
+
+      // Gerar relatório final + Dataset de Fine-tuning após cada resposta
+      await generateFinalReportAndDataset(
+        user.email,
+        { transcription: textResponse }, // Usar o texto como transcrição para análise
+        [{ // Criar um array com a resposta atual para o dataset
+          question_index: currentQuestionIndex + 1,
+          question_text: currentQuestion.text,
+          question_domain: currentQuestion.domain,
+          transcript_text: textResponse,
+          audio_duration: null,
+          audio_file_url: null,
+          drive_file_id: transcriptionUpload.fileId,
+          analysis_keywords: extractKeywordsFromText(textResponse),
+          sentiment_score: 0.9,
+          emotional_tone: 'text_response',
+          created_at: new Date().toISOString()
+        }]
+      );
+
+      setTimeout(() => {
+        handleNextQuestion();
+      }, 3000);
+     
+    } catch (error) {
+      console.error("❌ Erro ao processar resposta de texto:", error);
+      setTranscript("Erro ao processar a resposta. Tente novamente.");
+      setUploadStatus("❌ Erro no processamento");
+      updateProcessingStep("❌ Erro no processamento", 'error');
+    }
+   
+    setIsProcessing(false);
+  };
+
+  // Função auxiliar para extrair palavras-chave do texto
+  const extractKeywordsFromText = (text: string): string[] => {
+    const words = text.toLowerCase().split(/\W+/)
+    const stopWords = ['o', 'a', 'de', 'que', 'e', 'do', 'da', 'em', 'um', 'para', 'é', 'com', 'não', 'uma', 'os', 'no', 'se', 'na', 'por', 'mais', 'as', 'dos', 'como', 'mas', 'foi', 'ao', 'ele', 'das', 'tem', 'à', 'seu', 'sua', 'ou', 'ser', 'quando', 'muito', 'há', 'nos', 'já', 'está', 'eu', 'também', 'só', 'pelo', 'pela', 'até', 'isso', 'ela', 'entre', 'era', 'depois', 'sem', 'mesmo', 'aos', 'ter', 'seus', 'quem', 'nas', 'me', 'esse', 'eles', 'estão', 'você', 'tinha', 'foram', 'essa', 'num', 'nem', 'suas', 'meu', 'às', 'minha', 'têm', 'numa', 'pelos', 'elas', 'havia', 'seja', 'qual', 'será', 'nós', 'tenho', 'lhe', 'deles', 'essas', 'esses', 'pelas', 'este', 'fosse', 'dele']
+    
+    return words
+      .filter(word => word.length > 3 && !stopWords.includes(word))
+      .slice(0, 5)
+  }
+
   const handleRecordingComplete = async (audioBlob, duration) => {
     if (!currentSession) {
       console.error('❌ Nenhuma sessão ativa')
@@ -109,10 +206,10 @@ export default function Analysis() {
     try {
       const currentQuestion = DNA_ANALYSIS_QUESTIONS[currentQuestionIndex];
       
-      // 1. Upload do arquivo de áudio para Google Drive
-      updateProcessingStep("📤 Enviando áudio para Google Drive", 'processing');
-      setUploadStatus("📤 Enviando áudio para Google Drive...");
-      console.log('📤 Fazendo upload do áudio para Google Drive...')
+      // 1. Upload do arquivo de áudio para Supabase Storage
+      updateProcessingStep("📤 Enviando áudio para Supabase Storage", 'processing');
+      setUploadStatus("📤 Enviando áudio para Supabase Storage...");
+      console.log('📤 Fazendo upload do áudio para Supabase Storage...')
       
       const audioFile = new File([audioBlob], `${user.email}_q${currentQuestionIndex + 1}_${Date.now()}.wav`, {
         type: 'audio/wav'
@@ -125,8 +222,8 @@ export default function Analysis() {
         questionText: currentQuestion.text
       });
       
-      console.log('✅ Áudio enviado para Google Drive:', uploadResult.file_url)
-      updateProcessingStep("📤 Enviando áudio para Google Drive", 'completed');
+      console.log('✅ Áudio enviado para Supabase Storage:', uploadResult.file_url)
+      updateProcessingStep("📤 Enviando áudio para Supabase Storage", 'completed');
 
       // 2. Gerar transcrição
       updateProcessingStep("🎤 Gerando transcrição", 'processing');
@@ -136,18 +233,18 @@ export default function Analysis() {
       console.log('✅ Transcrição gerada:', transcriptionResult.transcription?.substring(0, 50) + '...')
       updateProcessingStep("🎤 Gerando transcrição", 'completed');
 
-      // 3. Salvar transcrição no Google Drive
-      updateProcessingStep("📝 Salvando transcrição no Google Drive", 'processing');
-      setUploadStatus("📝 Salvando transcrição no Google Drive...");
-      console.log('📝 Salvando transcrição no Google Drive...')
-      const transcriptionUpload = await saveTranscriptionToDrive(
+      // 3. Salvar transcrição no Supabase Storage
+      updateProcessingStep("📝 Salvando transcrição no Supabase Storage", 'processing');
+      setUploadStatus("📝 Salvando transcrição no Supabase Storage...");
+      console.log('📝 Salvando transcrição no Supabase Storage...')
+      const transcriptionUpload = await saveTranscriptionToStorage(
         transcriptionResult.transcription || '',
         user.email,
         currentQuestionIndex + 1,
         currentQuestion.text
       );
-      console.log('✅ Transcrição salva no Google Drive:', transcriptionUpload.fileUrl)
-      updateProcessingStep("📝 Salvando transcrição no Google Drive", 'completed');
+      console.log('✅ Transcrição salva no Supabase Storage:', transcriptionUpload.fileUrl)
+      updateProcessingStep("📝 Salvando transcrição no Supabase Storage", 'completed');
 
       // 4. Salvar resposta no banco de dados
       updateProcessingStep("💾 Salvando no banco de dados", 'processing');
@@ -161,7 +258,7 @@ export default function Analysis() {
         transcript_text: transcriptionResult.transcription || "Transcrição em processamento...",
         audio_duration: duration,
         audio_file_url: uploadResult.file_url,
-        drive_file_id: uploadResult.drive_file_id,
+        drive_file_id: uploadResult.storage_file_id,
         analysis_keywords: transcriptionResult.keywords || [],
         sentiment_score: transcriptionResult.confidence_score || 0,
         emotional_tone: transcriptionResult.emotional_tone || null
@@ -182,7 +279,7 @@ export default function Analysis() {
           transcript_text: transcriptionResult.transcription || "Transcrição em processamento...",
           audio_duration: duration,
           audio_file_url: uploadResult.file_url,
-          drive_file_id: uploadResult.drive_file_id,
+          drive_file_id: uploadResult.storage_file_id,
           analysis_keywords: transcriptionResult.keywords || [],
           sentiment_score: transcriptionResult.confidence_score || 0,
           emotional_tone: transcriptionResult.emotional_tone || null,
@@ -307,7 +404,7 @@ export default function Analysis() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-neon-blue">
                   <HardDrive className="w-4 h-4" />
-                  <span>Salvando no Google Drive</span>
+                  <span>Salvando no Supabase Storage</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-neon-orange">
                   <Database className="w-4 h-4" />
@@ -356,7 +453,7 @@ export default function Analysis() {
                     <span className="font-medium text-glow-orange">Análise Completa Gerada</span>
                   </div>
                   <p className="text-sm text-text-secondary mt-1">
-                    Relatório detalhado salvo no Google Drive
+                    Relatório detalhado salvo no Supabase Storage
                   </p>
                 </div>
                 <div className="metallic-elevated rounded-lg p-4 neon-border-blue">
@@ -374,7 +471,7 @@ export default function Analysis() {
                     <span className="font-medium text-glow-orange">Arquivos Salvos</span>
                   </div>
                   <p className="text-sm text-text-secondary mt-1">
-                    Áudios e transcrições no Google Drive
+                    Áudios e transcrições no Supabase Storage
                   </p>
                 </div>
                 <Button
@@ -508,6 +605,7 @@ export default function Analysis() {
             {audioEnded && (
               <AudioRecorder
                 onRecordingComplete={handleRecordingComplete}
+                onTextResponse={handleTextResponse}
                 isProcessing={isProcessing}
                 disabled={isProcessing}
               />

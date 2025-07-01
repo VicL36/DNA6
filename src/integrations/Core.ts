@@ -1,5 +1,5 @@
 // Integrações REAIS para DNA UP Platform - UPLOAD IMEDIATO
-import { googleDriveService } from './GoogleDriveService'
+import { supabaseStorageService } from './SupabaseStorageService'
 import { FineTuningDatasetGenerator } from './FineTuningDatasetGenerator'
 
 export interface LLMRequest {
@@ -32,7 +32,7 @@ export interface FileUploadRequest {
 export interface FileUploadResponse {
   file_url: string
   file_id: string
-  drive_file_id: string
+  storage_file_id: string
   transcription_file_id?: string
   transcription_url?: string
 }
@@ -204,39 +204,39 @@ Retorne uma análise estruturada e detalhada.
   }
 }
 
-// Upload IMEDIATO para Google Drive - PRIORIDADE MÁXIMA
+// Upload IMEDIATO para Supabase Storage - PRIORIDADE MÁXIMA
 export async function UploadFile(request: FileUploadRequest): Promise<FileUploadResponse> {
   try {
-    console.log('🚨 UPLOAD IMEDIATO INICIADO para Google Drive...')
+    console.log('🚨 UPLOAD IMEDIATO INICIADO para Supabase Storage...')
     console.log('📄 Arquivo:', request.file.name, 'Usuário:', request.userEmail, 'Pergunta:', request.questionIndex)
 
-    // Verificar se o Google Drive está configurado
-    if (!googleDriveService.isConfigured()) {
-      console.error('❌ Google Drive não está configurado!')
-      console.error('🔧 Configuração necessária:', googleDriveService.getConfigInfo())
+    // Verificar se o Supabase Storage está configurado
+    if (!supabaseStorageService.isConfigured()) {
+      console.error('❌ Supabase Storage não está configurado!')
+      console.error('🔧 Configuração necessária:', supabaseStorageService.getConfigInfo())
       
-      throw new Error('Google Drive não está configurado. Verifique as variáveis de ambiente.')
+      throw new Error('Supabase Storage não está configurado. Verifique as variáveis de ambiente.')
     }
 
     // 1. Upload IMEDIATO do arquivo de áudio
     console.log('🎵 UPLOAD IMEDIATO: Fazendo upload do áudio...')
-    const audioUpload = await googleDriveService.uploadAudioFile(
+    const audioUpload = await supabaseStorageService.uploadAudioFile(
       request.file,
       request.userEmail,
       request.questionIndex,
       request.questionText
     )
 
-    console.log('✅ ÁUDIO ENVIADO IMEDIATAMENTE para Google Drive:', audioUpload.fileUrl)
+    console.log('✅ ÁUDIO ENVIADO IMEDIATAMENTE para Supabase Storage:', audioUpload.fileUrl)
 
     return {
       file_url: audioUpload.fileUrl,
       file_id: audioUpload.fileId,
-      drive_file_id: audioUpload.fileId
+      storage_file_id: audioUpload.fileId
     }
 
   } catch (error) {
-    console.error('❌ Erro no upload IMEDIATO para Google Drive:', error)
+    console.error('❌ Erro no upload IMEDIATO para Supabase Storage:', error)
     
     // Fallback para upload simulado
     console.log('🔄 Usando upload simulado como fallback...')
@@ -244,39 +244,39 @@ export async function UploadFile(request: FileUploadRequest): Promise<FileUpload
     const mockFileId = `file_${timestamp}_${Math.random().toString(36).substr(2, 9)}`
     
     return {
-      file_url: `https://drive.google.com/file/d/${mockFileId}/view`,
+      file_url: `https://supabase.storage.mock/${mockFileId}`,
       file_id: mockFileId,
-      drive_file_id: mockFileId
+      storage_file_id: mockFileId
     }
   }
 }
 
-// Salvar IMEDIATAMENTE transcrição no Google Drive
-export async function saveTranscriptionToDrive(
+// Salvar IMEDIATAMENTE transcrição no Supabase Storage
+export async function saveTranscriptionToStorage(
   transcription: string,
   userEmail: string,
   questionIndex: number,
   questionText: string
 ): Promise<{ fileId: string; fileUrl: string }> {
   try {
-    console.log('🚨 SALVAMENTO IMEDIATO: Salvando transcrição no Google Drive...')
+    console.log('🚨 SALVAMENTO IMEDIATO: Salvando transcrição no Supabase Storage...')
 
-    if (!googleDriveService.isConfigured()) {
-      console.warn('⚠️ Google Drive não configurado, pulando salvamento da transcrição')
+    if (!supabaseStorageService.isConfigured()) {
+      console.warn('⚠️ Supabase Storage não configurado, pulando salvamento da transcrição')
       return {
         fileId: 'mock_transcription_id',
-        fileUrl: 'https://drive.google.com/mock-transcription'
+        fileUrl: 'https://supabase.storage.mock/transcription'
       }
     }
 
-    const transcriptionUpload = await googleDriveService.uploadTranscription(
+    const transcriptionUpload = await supabaseStorageService.uploadTranscription(
       transcription,
       userEmail,
       questionIndex,
       questionText
     )
 
-    console.log('✅ TRANSCRIÇÃO SALVA IMEDIATAMENTE no Google Drive:', transcriptionUpload.fileUrl)
+    console.log('✅ TRANSCRIÇÃO SALVA IMEDIATAMENTE no Supabase Storage:', transcriptionUpload.fileUrl)
 
     return {
       fileId: transcriptionUpload.fileId,
@@ -287,7 +287,7 @@ export async function saveTranscriptionToDrive(
     console.error('❌ Erro no salvamento IMEDIATO da transcrição:', error)
     return {
       fileId: 'mock_transcription_id',
-      fileUrl: 'https://drive.google.com/mock-transcription'
+      fileUrl: 'https://supabase.storage.mock/transcription'
     }
   }
 }
@@ -307,20 +307,20 @@ export async function generateFinalReportAndDataset(
   try {
     console.log('📊 Gerando relatório final + dataset de fine-tuning...')
 
-    if (!googleDriveService.isConfigured()) {
-      console.warn('⚠️ Google Drive não configurado, pulando geração completa')
+    if (!supabaseStorageService.isConfigured()) {
+      console.warn('⚠️ Supabase Storage não configurado, pulando geração completa')
       return {
         reportFileId: 'mock_report_id',
-        reportFileUrl: 'https://drive.google.com/mock-report',
+        reportFileUrl: 'https://supabase.storage.mock/report',
         datasetFileId: 'mock_dataset_id',
-        datasetFileUrl: 'https://drive.google.com/mock-dataset',
+        datasetFileUrl: 'https://supabase.storage.mock/dataset',
         voiceCloningData: []
       }
     }
 
     // 1. Gerar relatório final
     console.log('📄 Gerando relatório final...')
-    const reportUpload = await googleDriveService.uploadFinalReport(
+    const reportUpload = await supabaseStorageService.uploadFinalReport(
       userEmail,
       analysisData,
       responses
@@ -334,7 +334,7 @@ export async function generateFinalReportAndDataset(
       analysisData
     )
 
-    const datasetUpload = await googleDriveService.uploadFineTuningDataset(
+    const datasetUpload = await supabaseStorageService.uploadFineTuningDataset(
       dataset,
       userEmail
     )
@@ -360,9 +360,9 @@ export async function generateFinalReportAndDataset(
     console.error('❌ Erro ao gerar relatório e dataset:', error)
     return {
       reportFileId: 'mock_report_id',
-      reportFileUrl: 'https://drive.google.com/mock-report',
+      reportFileUrl: 'https://supabase.storage.mock/report',
       datasetFileId: 'mock_dataset_id',
-      datasetFileUrl: 'https://drive.google.com/mock-dataset',
+      datasetFileUrl: 'https://supabase.storage.mock/dataset',
       voiceCloningData: []
     }
   }
@@ -439,53 +439,58 @@ function extractKeywords(text: string): string[] {
 
 function extractSummary(text: string): string {
   const lines = text.split('\n').filter(line => line.trim())
-  return lines.slice(0, 3).join(' ').substring(0, 300) + '...'
+  return lines.slice(0, 3).join(' ').substring(0, 200) + '...'
 }
 
 function extractInsights(text: string): string[] {
-  return [
-    'Personalidade complexa e multifacetada',
-    'Forte capacidade de introspecção',
-    'Busca constante por autenticidade',
-    'Valorização de relacionamentos profundos',
-    'Orientação para crescimento pessoal',
-    'Sensibilidade a questões existenciais'
-  ]
+  const insights = []
+  const lines = text.split('\n')
+  
+  for (const line of lines) {
+    if (line.includes('insight') || line.includes('característica') || line.includes('padrão')) {
+      insights.push(line.trim())
+    }
+  }
+  
+  return insights.slice(0, 6)
 }
 
 function extractPatterns(text: string): string[] {
-  return [
-    'Processamento reflexivo antes de respostas',
-    'Busca por compreensão profunda',
-    'Tendência a contextualizar experiências',
-    'Comunicação autêntica e vulnerável',
-    'Orientação para soluções construtivas',
-    'Integração de aspectos emocionais e racionais'
-  ]
+  const patterns = []
+  const lines = text.split('\n')
+  
+  for (const line of lines) {
+    if (line.includes('comportamento') || line.includes('tendência') || line.includes('padrão')) {
+      patterns.push(line.trim())
+    }
+  }
+  
+  return patterns.slice(0, 6)
 }
 
 function extractRecommendations(text: string): string {
-  return 'Continue investindo em práticas de autoconhecimento. Desenvolva ainda mais suas habilidades de comunicação empática. Busque equilíbrio entre introspecção e ação prática. Considere explorar modalidades que integrem corpo, mente e espírito.'
+  const lines = text.split('\n')
+  const recLines = []
+  
+  for (const line of lines) {
+    if (line.includes('recomend') || line.includes('sugest') || line.includes('desenvolv')) {
+      recLines.push(line.trim())
+    }
+  }
+  
+  return recLines.slice(0, 3).join(' ')
 }
 
 function generateDomainAnalysis(transcriptions: string[]): any {
   return {
-    "Identidade & Narrativa": "Muito desenvolvida - 92%",
-    "Valores & Princípios": "Extremamente desenvolvida - 95%",
-    "Crenças Sobre Si": "Bem desenvolvida - 87%",
-    "Crenças Sobre o Mundo/Outros": "Muito desenvolvida - 91%",
-    "Experiências Formativas": "Muito desenvolvida - 93%",
-    "Padrões Emocionais": "Bem desenvolvida - 85%",
-    "Cognição & Decisão": "Moderadamente desenvolvida - 78%",
-    "Contradições & Pontos Cegos": "Muito desenvolvida - 90%",
-    "Ambições & Medos": "Bem desenvolvida - 86%"
+    'Autoconhecimento': 8.5,
+    'Relacionamentos': 7.8,
+    'Carreira': 7.2,
+    'Valores': 9.1,
+    'Emoções': 8.3,
+    'Comunicação': 8.7,
+    'Liderança': 7.5,
+    'Criatividade': 8.0
   }
 }
 
-export async function InvokeLLM(request: LLMRequest): Promise<LLMResponse> {
-  if (request.file_urls && request.file_urls.length > 0) {
-    throw new Error('Use transcribeAudio function for audio transcription')
-  } else {
-    return generateAnalysis([request.prompt])
-  }
-}

@@ -1,0 +1,14 @@
+export const googleDriveConfig = {
+  clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || "".trim(),
+  clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || "".trim(),
+  refreshToken: import.meta.env.VITE_GOOGLE_DRIVE_ADMIN_REFRESH_TOKEN || "".trim(),
+  parentFolderId: import.meta.env.VITE_GOOGLE_DRIVE_PARENT_FOLDER_ID || "".trim(),
+};
+
+console.log("⚙️ Carregando configuração do Google Drive:");
+console.log("  Client ID:", googleDriveConfig.clientId ? googleDriveConfig.clientId.substring(0, 20) + "..." : "N/A");
+console.log("  Client Secret:", googleDriveConfig.clientSecret ? "*****" : "N/A");
+console.log("  Refresh Token:", googleDriveConfig.refreshToken ? "*****" : "N/A");
+console.log("  Parent Folder ID:", googleDriveConfig.parentFolderId || "N/A");
+
+

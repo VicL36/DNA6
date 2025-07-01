@@ -22,14 +22,16 @@ export class GoogleDriveService {
   constructor() {
     this.config = {
       clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
-      clientSecret: import.meta.env.GOOGLE_CLIENT_SECRET || '',
-      refreshToken: import.meta.env.GOOGLE_DRIVE_ADMIN_REFRESH_TOKEN || '',
-      parentFolderId: import.meta.env.GOOGLE_DRIVE_PARENT_FOLDER_ID || '1BeMvN-FCm751EO7JXhZi6pdpl5g7EO8q'
+      clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '',
+      refreshToken: import.meta.env.VITE_GOOGLE_DRIVE_ADMIN_REFRESH_TOKEN || '',
+      parentFolderId: import.meta.env.VITE_GOOGLE_DRIVE_PARENT_FOLDER_ID || ''
     }
 
     console.log('🔧 Configurando Google Drive Service...')
     console.log('📁 Parent Folder ID:', this.config.parentFolderId)
     console.log('🔑 Client ID:', this.config.clientId?.substring(0, 20) + '...')
+    console.log('🔑 Has Client Secret:', !!this.config.clientSecret)
+    console.log('🔑 Has Refresh Token:', !!this.config.refreshToken)
   }
 
   // Obter access token usando refresh token

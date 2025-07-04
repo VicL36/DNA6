@@ -70,7 +70,7 @@ export async function transcribeAudio(audioBlob: Blob): Promise<LLMResponse> {
     const duration = result.metadata?.duration || 0
 
     console.log('✅ Transcrição Deepgram concluída:', { 
-      transcript: transcript.substring(0, 50) + '...', 
+      transcript: transcript.substring(0, 50) + '...',
       confidence,
       duration 
     })
@@ -729,7 +729,7 @@ Além da análise psicológica padrão, extraia especificamente elementos reprod
     }
   } catch (error) {
     console.error('❌ Erro na análise Gemini:', error)
-    return generateMockAnalysis(transcriptions)
+    throw error
   }
 }
 
@@ -939,4 +939,5 @@ function generateDomainAnalysis(transcriptions: string[]): any {
     'Criatividade': 8.0
   }
 }
+
 

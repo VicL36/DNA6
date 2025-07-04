@@ -1,4 +1,4 @@
-// Integrações REAIS para DNA UP Platform - UPLOAD IMEDIATO 
+// Integrações REAIS para DNA UP Platform - UPLOAD IMEDIATO
 import { supabaseStorageService } from './SupabaseStorageService'
 import { FineTuningDatasetGenerator } from './FineTuningDatasetGenerator'
 

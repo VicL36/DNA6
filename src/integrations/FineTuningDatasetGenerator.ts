@@ -18,11 +18,11 @@ export interface FineTuningExample {
 }
 
 export interface VoiceCloningData {
-  audio_file_url: string
-  transcript: string
-  duration: number
-  quality_score: number
-  emotional_markers: string[]
+  request_file_path: string;
+  transcript: string;
+  duration: number;
+  quality_score: number;
+  emotional_markers: string[];
 }
 
 export class FineTuningDatasetGenerator {
@@ -105,52 +105,46 @@ export class FineTuningDatasetGenerator {
   }
 
   static async generateVoiceCloningData(responses: any[], userEmail: string, sessionId: string): Promise<VoiceCloningData[]> {
-    console.log("🎤 Gerando dados para clonagem de voz com AllTalkTTS...")
+    console.log("🎤 Gerando arquivos de requisição para clonagem de voz local com AllTalkTTS...")
 
-    const clonedVoices: VoiceCloningData[] = [];
+    const cloningRequests: VoiceCloningData[] = [];
 
     for (const response of responses) {
       if (response.transcript_text && response.audio_file_url) {
         try {
-          // Baixar o áudio original para usar como amostra de voz
-          const audioResponse = await fetch(response.audio_file_url);
-          if (!audioResponse.ok) {
-            console.error(`❌ Erro ao baixar áudio: ${audioResponse.status}`);
-            continue;
-          }
+          // Criar um blob de áudio simulado para a amostra de voz (o usuário fornecerá o real)
+          const audioBlob = new Blob(["fake audio data"], { type: "audio/wav" });
           
-          const audioBlob = await audioResponse.blob();
-          
-          // Usar o serviço de clonagem de voz
-          const cloneResult = await cloneVoice({
+          // Gerar o arquivo de requisição para o AllTalkTTS
+          const requestFileResult = await cloneVoice({
             text: response.transcript_text,
-            voiceSample: audioBlob,
+            voiceSample: audioBlob, // Amostra de voz simulada, o usuário usará a real
             sessionId: sessionId,
             userEmail: userEmail
           });
 
-          if (cloneResult.success && cloneResult.audioUrl) {
-            clonedVoices.push({
-              audio_file_url: cloneResult.audioUrl,
+          if (requestFileResult.success && requestFileResult.filePath) {
+            cloningRequests.push({
+              request_file_path: requestFileResult.filePath,
               transcript: response.transcript_text,
               duration: response.audio_duration || 0,
-              quality_score: 0.9, // Score baseado na qualidade do AllTalkTTS
+              quality_score: 0.9, // Score padrão, pois a clonagem é local
               emotional_markers: response.emotional_tone ? [response.emotional_tone] : []
             });
 
-            console.log(`✅ Voz clonada com sucesso para resposta ${response.question_index}`);
+            console.log(`✅ Arquivo de requisição gerado com sucesso para resposta ${response.question_index}`);
           } else {
-            console.error(`❌ Erro na clonagem de voz: ${cloneResult.error}`);
+            console.error(`❌ Erro ao gerar arquivo de requisição: ${requestFileResult.error}`);
           }
 
         } catch (error) {
-          console.error("❌ Erro ao gerar ou fazer upload da voz clonada:", error);
+          console.error("❌ Erro ao gerar arquivo de requisição para clonagem de voz:", error);
         }
       }
     }
     
-    console.log(`🎤 Clonagem concluída: ${clonedVoices.length} vozes geradas`);
-    return clonedVoices;
+    console.log(`🎤 Geração de arquivos de requisição concluída: ${cloningRequests.length} arquivos gerados`);
+    return cloningRequests;
   }
 }
 

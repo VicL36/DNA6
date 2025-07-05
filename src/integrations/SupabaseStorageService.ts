@@ -1,6 +1,6 @@
 // Serviço REAL de Supabase Storage - DNA UP Platform - CORRIGIDO FINAL
 import { supabase } from "@/lib/supabase";
-import { jsPDF } from "jspdf";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 export interface SupabaseStorageConfig {
   bucketName: string

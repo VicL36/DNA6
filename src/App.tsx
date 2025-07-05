@@ -7,7 +7,6 @@ import Analysis from '@/pages/Analysis'
 import History from '@/pages/History'
 import Login from '@/pages/Login'
 import AuthCallback from '@/pages/AuthCallback'
-import TestComponent from '@/components/TestComponent'
 import { Loader2, AlertTriangle } from 'lucide-react'
 
 function App() {
@@ -88,7 +87,6 @@ function App() {
       <Routes>
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/login" element={!user ? <Login onLogin={setUser} /> : <Navigate to="/dashboard" replace />} />
-        <Route path="/test" element={<TestComponent />} />
         <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
         <Route
           path="/dashboard"

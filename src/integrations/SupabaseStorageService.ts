@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { generateVoiceCloningData } from './voiceCloning';
+import { generateVoiceCloningFile } from './voiceCloning';
 import { generateReportPDF, generateTranscriptionPDF } from './pdfGenerator';
 import { FineTuningDatasetGenerator } from '../integrations/FineTuningDatasetGenerator';
 
@@ -20,7 +20,7 @@ interface ProcessingResponse {
   results?: {
     reportPdfUrl?: string;
     transcriptionPdfUrl?: string;
-    clonedVoicesUrls?: string[];
+    clonedVoiceRequestFilePaths?: string[];
     fineTuningDataset?: any[];
   };
   errors?: string[];
@@ -77,23 +77,23 @@ class SupabaseIntegrationService {
         errors.push(`Erro na transcrição PDF: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       }
       
-      // 4. Gerar clonagem de vozes
+      // 4. Gerar arquivos de requisição para clonagem de vozes
       try {
-        console.log('🎤 Iniciando clonagem de vozes...');
-        const clonedVoices = await FineTuningDatasetGenerator.generateVoiceCloningData(
+        console.log("🎤 Iniciando geração de arquivos de requisição para clonagem de vozes...");
+        const cloningRequestFiles = await FineTuningDatasetGenerator.generateVoiceCloningData(
           sessionData.responses,
           sessionData.userEmail,
           sessionData.sessionId
         );
         
-        if (clonedVoices.length > 0) {
-          results.clonedVoicesUrls = clonedVoices.map(voice => voice.audio_file_url);
-          console.log(`✅ ${clonedVoices.length} vozes clonadas com sucesso`);
+        if (cloningRequestFiles.length > 0) {
+          results.clonedVoiceRequestFilePaths = cloningRequestFiles.map(req => req.request_file_path);
+          console.log(`✅ ${cloningRequestFiles.length} arquivos de requisição de clonagem de voz gerados com sucesso`);
         } else {
-          errors.push('Nenhuma voz foi clonada');
+          errors.push("Nenhum arquivo de requisição de clonagem de voz foi gerado");
         }
       } catch (error) {
-        errors.push(`Erro na clonagem de vozes: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+        errors.push(`Erro na geração de arquivos de requisição de clonagem de vozes: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
       }
       
       // 5. Gerar dataset de fine-tuning

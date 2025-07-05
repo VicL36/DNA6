@@ -45,7 +45,7 @@ export class SupabaseStorageService {
         return true
       } else {
         console.error('❌ Bucket não existe:', this.config.bucketName)
-        console.error('🔧 Execute a migração SQL: supabase/migrations/20250630020000_setup_storage.sql')
+        console.error('🔧 Execute a migração SQL: supabase/migrations/20250630020001_fix_storage_setup.sql')
         return false
       }
     } catch (error) {

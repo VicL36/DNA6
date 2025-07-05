@@ -1,3 +1,6 @@
+import { supabase } from "../lib/supabase";
+import Replicate from "replicate";
+
 // Gerador de Dataset para Fine-tuning TinyLlama - DNA UP Platform
 export interface FineTuningExample {
   instruction: string
@@ -101,16 +104,56 @@ export class FineTuningDatasetGenerator {
     return "Recomendações..."
   }
 
-  static generateVoiceCloningData(responses: any[]): VoiceCloningData[] {
-    console.log("🎤 Gerando dados para clonagem de voz...")
-    // Este é um stub. A implementação real dependeria de um serviço de clonagem de voz.
-    return responses.map(response => ({
-      audio_file_url: response.audio_url || "",
-      transcript: response.transcript_text || "",
-      duration: response.audio_duration || 0,
-      quality_score: 0.8, // Exemplo de score
-      emotional_markers: response.emotional_tone ? [response.emotional_tone] : []
-    }))
+  static async generateVoiceCloningData(responses: any[], userEmail: string): Promise<VoiceCloningData[]> {
+    console.log("🎤 Gerando dados para clonagem de voz com Replicate...")
+    const replicate = new Replicate({
+      auth: process.env.REPLICATE_API_TOKEN,
+    });
+
+    const clonedVoices: VoiceCloningData[] = [];
+
+    for (const response of responses) {
+      if (response.transcript_text && response.audio_url) {
+        try {
+          const output: any = await replicate.run(
+            "minimax/voice-cloning:b2a6803a0168676a179612330777095687705645595568430679234674720950", // Exemplo de modelo, verificar o correto
+            {
+              input: {
+                text: response.transcript_text,
+                audio: response.audio_url,
+              },
+            }
+          );
+          
+          const audioBlob = await fetch(output.audio).then(res => res.blob());
+          const audioFileName = `cloned_voice_${response.question_index}_${Date.now()}.wav`;
+          const audioPath = `users/${userEmail.replace(/[@.]/g, '_')}/cloned_voices/${audioFileName}`;
+
+          const { data, error } = await supabase.storage
+            .from('dna-protocol-files')
+            .upload(audioPath, audioBlob, { contentType: 'audio/wav' });
+
+          if (error) {
+            console.error("❌ Erro ao fazer upload do áudio clonado para o Supabase:", error);
+            throw error;
+          }
+
+          const publicUrl = supabase.storage.from('dna-protocol-files').getPublicUrl(audioPath).data.publicUrl;
+
+          clonedVoices.push({
+            audio_file_url: publicUrl,
+            transcript: response.transcript_text,
+            duration: response.audio_duration || 0,
+            quality_score: 0.9, // Exemplo de score
+            emotional_markers: response.emotional_tone ? [response.emotional_tone] : []
+          });
+
+        } catch (error) {
+          console.error("❌ Erro ao gerar ou fazer upload da voz clonada:", error);
+        }
+      }
+    }
+    return clonedVoices;
   }
 }
 

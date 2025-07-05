@@ -78,3 +78,28 @@ export class FineTuningDatasetGenerator {
           timestamp: response.created_at
         }
       })
+
+    })
+
+    return dataset
+  }
+
+  // Funções de geração de conteúdo (stubs)
+  private static generateResponseAnalysis(response: any, analysisData: any): string {
+    return "Análise da resposta..."
+  }
+
+  private static generateInsights(response: any, analysisData: any): string {
+    return "Insights..."
+  }
+
+  private static inferPersonalityTrait(response: any): string {
+    return "Traço de personalidade..."
+  }
+
+  private static generatePersonalizedRecommendations(response: any, analysisData: any): string {
+    return "Recomendações..."
+  }
+}
+
+

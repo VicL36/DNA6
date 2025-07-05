@@ -11,7 +11,8 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['lucide-react'],
+    include: ["replicate", "jspdf"],
+    exclude: ["lucide-react"],
   },
   server: {
     host: '0.0.0.0',

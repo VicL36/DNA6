@@ -1,5 +1,5 @@
 import { supabase } from "../lib/supabase";
-import Replicate from "replicate";
+import { generateVoiceCloningData as cloneVoice, VoiceCloningData as VoiceCloneData } from "../lib/voiceCloning";
 
 // Gerador de Dataset para Fine-tuning TinyLlama - DNA UP Platform
 export interface FineTuningExample {
@@ -104,55 +104,52 @@ export class FineTuningDatasetGenerator {
     return "Recomendações..."
   }
 
-  static async generateVoiceCloningData(responses: any[], userEmail: string): Promise<VoiceCloningData[]> {
-    console.log("🎤 Gerando dados para clonagem de voz com Replicate...")
-    const replicate = new Replicate({
-      auth: process.env.REPLICATE_API_TOKEN,
-    });
+  static async generateVoiceCloningData(responses: any[], userEmail: string, sessionId: string): Promise<VoiceCloningData[]> {
+    console.log("🎤 Gerando dados para clonagem de voz com AllTalkTTS...")
 
     const clonedVoices: VoiceCloningData[] = [];
 
     for (const response of responses) {
-      if (response.transcript_text && response.audio_url) {
+      if (response.transcript_text && response.audio_file_url) {
         try {
-          const output: any = await replicate.run(
-            "minimax/voice-cloning:b2a6803a0168676a179612330777095687705645595568430679234674720950", // Exemplo de modelo, verificar o correto
-            {
-              input: {
-                text: response.transcript_text,
-                audio: response.audio_url,
-              },
-            }
-          );
-          
-          const audioBlob = await fetch(output.audio).then(res => res.blob());
-          const audioFileName = `cloned_voice_${response.question_index}_${Date.now()}.wav`;
-          const audioPath = `users/${userEmail.replace(/[@.]/g, '_')}/cloned_voices/${audioFileName}`;
-
-          const { data, error } = await supabase.storage
-            .from('dna-protocol-files')
-            .upload(audioPath, audioBlob, { contentType: 'audio/wav' });
-
-          if (error) {
-            console.error("❌ Erro ao fazer upload do áudio clonado para o Supabase:", error);
-            throw error;
+          // Baixar o áudio original para usar como amostra de voz
+          const audioResponse = await fetch(response.audio_file_url);
+          if (!audioResponse.ok) {
+            console.error(`❌ Erro ao baixar áudio: ${audioResponse.status}`);
+            continue;
           }
-
-          const publicUrl = supabase.storage.from('dna-protocol-files').getPublicUrl(audioPath).data.publicUrl;
-
-          clonedVoices.push({
-            audio_file_url: publicUrl,
-            transcript: response.transcript_text,
-            duration: response.audio_duration || 0,
-            quality_score: 0.9, // Exemplo de score
-            emotional_markers: response.emotional_tone ? [response.emotional_tone] : []
+          
+          const audioBlob = await audioResponse.blob();
+          
+          // Usar o serviço de clonagem de voz
+          const cloneResult = await cloneVoice({
+            text: response.transcript_text,
+            voiceSample: audioBlob,
+            sessionId: sessionId,
+            userEmail: userEmail
           });
+
+          if (cloneResult.success && cloneResult.audioUrl) {
+            clonedVoices.push({
+              audio_file_url: cloneResult.audioUrl,
+              transcript: response.transcript_text,
+              duration: response.audio_duration || 0,
+              quality_score: 0.9, // Score baseado na qualidade do AllTalkTTS
+              emotional_markers: response.emotional_tone ? [response.emotional_tone] : []
+            });
+
+            console.log(`✅ Voz clonada com sucesso para resposta ${response.question_index}`);
+          } else {
+            console.error(`❌ Erro na clonagem de voz: ${cloneResult.error}`);
+          }
 
         } catch (error) {
           console.error("❌ Erro ao gerar ou fazer upload da voz clonada:", error);
         }
       }
     }
+    
+    console.log(`🎤 Clonagem concluída: ${clonedVoices.length} vozes geradas`);
     return clonedVoices;
   }
 }

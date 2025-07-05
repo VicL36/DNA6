@@ -100,6 +100,18 @@ export class FineTuningDatasetGenerator {
   private static generatePersonalizedRecommendations(response: any, analysisData: any): string {
     return "Recomendações..."
   }
+
+  static generateVoiceCloningData(responses: any[]): VoiceCloningData[] {
+    console.log("🎤 Gerando dados para clonagem de voz...")
+    // Este é um stub. A implementação real dependeria de um serviço de clonagem de voz.
+    return responses.map(response => ({
+      audio_file_url: response.audio_url || "",
+      transcript: response.transcript_text || "",
+      duration: response.audio_duration || 0,
+      quality_score: 0.8, // Exemplo de score
+      emotional_markers: response.emotional_tone ? [response.emotional_tone] : []
+    }))
+  }
 }
 
 

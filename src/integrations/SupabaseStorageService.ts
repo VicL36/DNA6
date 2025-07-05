@@ -1,4 +1,4 @@
-// Serviço REAL de Supabase Storage - DNA UP Platform - CORRIGIDO
+// Serviço REAL de Supabase Storage - DNA UP Platform - CORRIGIDO FINAL
 import { supabase } from '@/lib/supabase'
 
 export interface SupabaseStorageConfig {
@@ -19,7 +19,7 @@ export class SupabaseStorageService {
 
   constructor() {
     this.config = {
-      bucketName: import.meta.env.VITE_SUPABASE_STORAGE_BUCKET || 'dna-protocol-files',
+      bucketName: 'dna-protocol-files', // Bucket fixo criado via SQL
       baseUrl: import.meta.env.VITE_SUPABASE_URL || ''
     }
 
@@ -28,38 +28,29 @@ export class SupabaseStorageService {
     console.log('🔗 Base URL:', this.config.baseUrl?.substring(0, 30) + '...')
   }
 
-  // Verificar e criar bucket se necessário
-  private async ensureBucketExists(): Promise<void> {
+  // Verificar se o bucket existe (não criar, apenas verificar)
+  private async checkBucketExists(): Promise<boolean> {
     try {
-      // Verificar se o bucket existe
-      const { data: buckets, error: listError } = await supabase.storage.listBuckets()
+      const { data: buckets, error } = await supabase.storage.listBuckets()
       
-      if (listError) {
-        console.error('❌ Erro ao listar buckets:', listError)
-        return
+      if (error) {
+        console.error('❌ Erro ao verificar buckets:', error)
+        return false
       }
 
       const bucketExists = buckets?.some(bucket => bucket.name === this.config.bucketName)
       
-      if (!bucketExists) {
-        console.log('🪣 Criando bucket:', this.config.bucketName)
-        
-        const { error: createError } = await supabase.storage.createBucket(this.config.bucketName, {
-          public: true,
-          allowedMimeTypes: ['audio/*', 'text/*', 'application/json', 'application/jsonl'],
-          fileSizeLimit: 50 * 1024 * 1024 // 50MB
-        })
-        
-        if (createError) {
-          console.error('❌ Erro ao criar bucket:', createError)
-        } else {
-          console.log('✅ Bucket criado com sucesso!')
-        }
+      if (bucketExists) {
+        console.log('✅ Bucket existe:', this.config.bucketName)
+        return true
       } else {
-        console.log('✅ Bucket já existe:', this.config.bucketName)
+        console.error('❌ Bucket não existe:', this.config.bucketName)
+        console.error('🔧 Execute a migração SQL: supabase/migrations/20250630020000_setup_storage.sql')
+        return false
       }
     } catch (error) {
-      console.error('❌ Erro ao verificar/criar bucket:', error)
+      console.error('❌ Erro ao verificar bucket:', error)
+      return false
     }
   }
 
@@ -80,8 +71,11 @@ export class SupabaseStorageService {
       console.log('🎵 Iniciando upload REAL de áudio para Supabase Storage...')
       console.log('📄 Arquivo:', file.name, 'Tamanho:', file.size, 'bytes')
 
-      // Garantir que o bucket existe
-      await this.ensureBucketExists()
+      // Verificar se o bucket existe
+      const bucketExists = await this.checkBucketExists()
+      if (!bucketExists) {
+        throw new Error('Bucket não configurado. Execute a migração SQL primeiro.')
+      }
 
       const userFolderPath = this.getUserFolderPath(userEmail)
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -136,8 +130,11 @@ export class SupabaseStorageService {
     try {
       console.log('📝 Enviando transcrição REAL para Supabase Storage...')
 
-      // Garantir que o bucket existe
-      await this.ensureBucketExists()
+      // Verificar se o bucket existe
+      const bucketExists = await this.checkBucketExists()
+      if (!bucketExists) {
+        throw new Error('Bucket não configurado. Execute a migração SQL primeiro.')
+      }
 
       const userFolderPath = this.getUserFolderPath(userEmail)
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -203,8 +200,11 @@ Gerado automaticamente pelo DNA UP Platform
     try {
       console.log('🤖 Enviando dataset de fine-tuning REAL para Supabase Storage...')
 
-      // Garantir que o bucket existe
-      await this.ensureBucketExists()
+      // Verificar se o bucket existe
+      const bucketExists = await this.checkBucketExists()
+      if (!bucketExists) {
+        throw new Error('Bucket não configurado. Execute a migração SQL primeiro.')
+      }
 
       const userFolderPath = this.getUserFolderPath(userEmail)
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -239,6 +239,7 @@ Gerado automaticamente pelo DNA UP Platform
 
       console.log('✅ Dataset de fine-tuning enviado com sucesso!')
       console.log('📁 Path:', data.path)
+      console.log('🔗 URL:', publicUrlData.publicUrl)
 
       return {
         fileId: data.path,
@@ -263,8 +264,11 @@ Gerado automaticamente pelo DNA UP Platform
     try {
       console.log('📊 Gerando relatório final REAL completo...')
 
-      // Garantir que o bucket existe
-      await this.ensureBucketExists()
+      // Verificar se o bucket existe
+      const bucketExists = await this.checkBucketExists()
+      if (!bucketExists) {
+        throw new Error('Bucket não configurado. Execute a migração SQL primeiro.')
+      }
 
       const userFolderPath = this.getUserFolderPath(userEmail)
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -361,6 +365,7 @@ ${responses.map((response, i) => `
 
       console.log('✅ Relatório final enviado com sucesso!')
       console.log('📁 Path:', data.path)
+      console.log('🔗 URL:', publicUrlData.publicUrl)
 
       return {
         fileId: data.path,
@@ -410,6 +415,7 @@ ${responses.map((response, i) => `
         return []
       }
 
+      console.log('✅ Arquivos listados:', data?.length || 0)
       return data || []
     } catch (error) {
       console.error('❌ Erro ao listar arquivos:', error)

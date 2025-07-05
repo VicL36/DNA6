@@ -144,11 +144,15 @@ export default function Analysis() {
       setTranscript(textResponse);
       setUploadStatus("✅ Tudo salvo com sucesso!");
 
-      // Gerar relatório final + Dataset de Fine-tuning após cada resposta
+      // 3. Gerar relatório e dataset após cada resposta
+      updateProcessingStep("📊 Gerando relatório e dataset", 'processing');
+      setUploadStatus("📊 Gerando relatório e dataset...");
+      console.log('📊 Gerando relatório e dataset...')
+      
       await generateFinalReportAndDataset(
         user.email,
-        { transcription: textResponse }, // Usar o texto como transcrição para análise
-        [{ // Criar um array com a resposta atual para o dataset
+        { transcription: textResponse },
+        [{
           question_index: currentQuestionIndex + 1,
           question_text: currentQuestion.text,
           question_domain: currentQuestion.domain,
@@ -162,6 +166,7 @@ export default function Analysis() {
           created_at: new Date().toISOString()
         }]
       );
+      updateProcessingStep("📊 Gerando relatório e dataset", 'completed');
 
       setTimeout(() => {
         handleNextQuestion();
@@ -225,10 +230,10 @@ export default function Analysis() {
       console.log('✅ Áudio enviado para Supabase Storage:', uploadResult.file_url)
       updateProcessingStep("📤 Enviando áudio para Supabase Storage", 'completed');
 
-      // 2. Gerar transcrição
+      // 2. Gerar transcrição REAL
       updateProcessingStep("🎤 Gerando transcrição", 'processing');
       setUploadStatus("🎤 Gerando transcrição...");
-      console.log('🎤 Gerando transcrição...')
+      console.log('🎤 Gerando transcrição REAL...')
       const transcriptionResult = await transcribeAudio(audioBlob);
       console.log('✅ Transcrição gerada:', transcriptionResult.transcription?.substring(0, 50) + '...')
       updateProcessingStep("🎤 Gerando transcrição", 'completed');
@@ -268,11 +273,15 @@ export default function Analysis() {
       setTranscript(transcriptionResult.transcription || "Transcrição em processamento...");
       setUploadStatus("✅ Tudo salvo com sucesso!");
 
-      // Gerar relatório final + Dataset de Fine-tuning após cada resposta
+      // 5. Gerar relatório e dataset REAL após cada resposta
+      updateProcessingStep("📊 Gerando relatório e dataset", 'processing');
+      setUploadStatus("📊 Gerando relatório e dataset...");
+      console.log('📊 Gerando relatório e dataset REAL...')
+      
       await generateFinalReportAndDataset(
         user.email,
-        transcriptionResult, // Usar a transcrição atual para análise
-        [{ // Criar um array com a resposta atual para o dataset
+        transcriptionResult,
+        [{
           question_index: currentQuestionIndex + 1,
           question_text: currentQuestion.text,
           question_domain: currentQuestion.domain,
@@ -286,6 +295,7 @@ export default function Analysis() {
           created_at: new Date().toISOString()
         }]
       );
+      updateProcessingStep("📊 Gerando relatório e dataset", 'completed');
 
       setTimeout(() => {
         handleNextQuestion();
@@ -319,8 +329,8 @@ export default function Analysis() {
         progress_percentage: progressPercentage
       });
     } else {
-      // Completar sessão e gerar análise + dataset
-      console.log('🏁 Sessão completa, gerando análise final + dataset...')
+      // Completar sessão e gerar análise final REAL
+      console.log('🏁 Sessão completa, gerando análise final REAL...')
       await completeSessionAndGenerateAnalysis();
     }
   };
@@ -338,12 +348,12 @@ export default function Analysis() {
         .sort((a, b) => a.question_index - b.question_index)
         .map(r => `PERGUNTA ${r.question_index}: ${r.question_text}\n\nRESPOSTA: ${r.transcript_text}`)
 
-      console.log('🧠 Gerando análise psicológica completa...')
-      // Gerar análise psicológica completa
+      console.log('🧠 Gerando análise psicológica REAL completa...')
+      // Gerar análise psicológica REAL completa
       const analysisResult = await generateAnalysis(transcriptions);
 
-      console.log('📄 Gerando relatório final + dataset de fine-tuning...')
-      // Gerar relatório final + dataset de fine-tuning
+      console.log('📄 Gerando relatório final REAL + dataset de fine-tuning...')
+      // Gerar relatório final REAL + dataset de fine-tuning
       const reportAndDataset = await generateFinalReportAndDataset(
         user.email,
         analysisResult,
@@ -396,10 +406,10 @@ export default function Analysis() {
                 </div>
               </div>
               <h2 className="text-2xl font-bold text-text-primary mb-4 text-glow-orange">
-                Gerando Análise Completa + Dataset
+                Gerando Análise REAL Completa + Dataset
               </h2>
               <p className="text-text-secondary mb-6">
-                Processando suas 108 respostas para criar seu perfil psicológico detalhado e dataset de fine-tuning para TinyLlama...
+                Processando suas 108 respostas para criar seu perfil psicológico detalhado e dataset de fine-tuning REAL para TinyLlama...
               </p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-neon-blue">
@@ -408,7 +418,7 @@ export default function Analysis() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-neon-orange">
                   <Database className="w-4 h-4" />
-                  <span>Gerando dataset de fine-tuning</span>
+                  <span>Gerando dataset REAL de fine-tuning</span>
                 </div>
                 <div className="text-sm text-text-muted">
                   Este processo pode levar alguns minutos
@@ -441,16 +451,16 @@ export default function Analysis() {
                 </div>
               </div>
               <h2 className="text-2xl font-bold text-text-primary mb-4 text-glow-blue">
-                Análise DNA UP Concluída!
+                Análise DNA UP REAL Concluída!
               </h2>
               <p className="text-text-secondary mb-6">
-                Suas 108 respostas foram processadas e sua análise psicológica completa + dataset de fine-tuning foram gerados com sucesso.
+                Suas 108 respostas foram processadas e sua análise psicológica completa + dataset de fine-tuning REAL foram gerados com sucesso.
               </p>
               <div className="space-y-3">
                 <div className="metallic-elevated rounded-lg p-4 neon-border-orange">
                   <div className="flex items-center gap-2 text-neon-orange">
                     <FileText className="w-5 h-5" />
-                    <span className="font-medium text-glow-orange">Análise Completa Gerada</span>
+                    <span className="font-medium text-glow-orange">Análise REAL Completa Gerada</span>
                   </div>
                   <p className="text-sm text-text-secondary mt-1">
                     Relatório detalhado salvo no Supabase Storage
@@ -459,19 +469,19 @@ export default function Analysis() {
                 <div className="metallic-elevated rounded-lg p-4 neon-border-blue">
                   <div className="flex items-center gap-2 text-neon-blue">
                     <Database className="w-5 h-5" />
-                    <span className="font-medium text-glow-blue">Dataset Fine-tuning</span>
+                    <span className="font-medium text-glow-blue">Dataset REAL Fine-tuning</span>
                   </div>
                   <p className="text-sm text-text-secondary mt-1">
-                    Dataset para TinyLlama gerado e salvo
+                    Dataset REAL para TinyLlama gerado e salvo
                   </p>
                 </div>
                 <div className="metallic-elevated rounded-lg p-4 neon-border-orange">
                   <div className="flex items-center gap-2 text-neon-orange">
                     <CloudUpload className="w-5 h-5" />
-                    <span className="font-medium text-glow-orange">Arquivos Salvos</span>
+                    <span className="font-medium text-glow-orange">Arquivos REAIS Salvos</span>
                   </div>
                   <p className="text-sm text-text-secondary mt-1">
-                    Áudios e transcrições no Supabase Storage
+                    Áudios e transcrições REAIS no Supabase Storage
                   </p>
                 </div>
                 <Button
@@ -504,7 +514,7 @@ export default function Analysis() {
           </Button>
          
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-text-primary text-glow-orange">Análise DNA UP Completa</h1>
+            <h1 className="text-2xl font-bold text-text-primary text-glow-orange">Análise DNA UP REAL Completa</h1>
             <p className="text-text-secondary">
               Pergunta {currentQuestionIndex + 1} de {DNA_ANALYSIS_QUESTIONS.length}
             </p>

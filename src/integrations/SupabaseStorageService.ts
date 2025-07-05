@@ -1,4 +1,4 @@
-// Serviço REAL de Supabase Storage - DNA UP Platform
+// Serviço REAL de Supabase Storage - DNA UP Platform - CORRIGIDO
 import { supabase } from '@/lib/supabase'
 
 export interface SupabaseStorageConfig {
@@ -19,13 +19,48 @@ export class SupabaseStorageService {
 
   constructor() {
     this.config = {
-      bucketName: 'dna-protocol-files', // Bucket principal para todos os arquivos
+      bucketName: import.meta.env.VITE_SUPABASE_STORAGE_BUCKET || 'dna-protocol-files',
       baseUrl: import.meta.env.VITE_SUPABASE_URL || ''
     }
 
     console.log('🔧 Configurando Supabase Storage Service...')
     console.log('🪣 Bucket Name:', this.config.bucketName)
     console.log('🔗 Base URL:', this.config.baseUrl?.substring(0, 30) + '...')
+  }
+
+  // Verificar e criar bucket se necessário
+  private async ensureBucketExists(): Promise<void> {
+    try {
+      // Verificar se o bucket existe
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets()
+      
+      if (listError) {
+        console.error('❌ Erro ao listar buckets:', listError)
+        return
+      }
+
+      const bucketExists = buckets?.some(bucket => bucket.name === this.config.bucketName)
+      
+      if (!bucketExists) {
+        console.log('🪣 Criando bucket:', this.config.bucketName)
+        
+        const { error: createError } = await supabase.storage.createBucket(this.config.bucketName, {
+          public: true,
+          allowedMimeTypes: ['audio/*', 'text/*', 'application/json', 'application/jsonl'],
+          fileSizeLimit: 50 * 1024 * 1024 // 50MB
+        })
+        
+        if (createError) {
+          console.error('❌ Erro ao criar bucket:', createError)
+        } else {
+          console.log('✅ Bucket criado com sucesso!')
+        }
+      } else {
+        console.log('✅ Bucket já existe:', this.config.bucketName)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao verificar/criar bucket:', error)
+    }
   }
 
   // Criar pasta para o usuário (estrutura de pastas no Storage)
@@ -42,8 +77,11 @@ export class SupabaseStorageService {
     questionText: string
   ): Promise<StorageUploadResponse> {
     try {
-      console.log('🎵 Iniciando upload de áudio para Supabase Storage...')
+      console.log('🎵 Iniciando upload REAL de áudio para Supabase Storage...')
       console.log('📄 Arquivo:', file.name, 'Tamanho:', file.size, 'bytes')
+
+      // Garantir que o bucket existe
+      await this.ensureBucketExists()
 
       const userFolderPath = this.getUserFolderPath(userEmail)
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -57,7 +95,7 @@ export class SupabaseStorageService {
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false,
-          contentType: 'audio/wav'
+          contentType: file.type || 'audio/wav'
         })
 
       if (error) {
@@ -96,7 +134,10 @@ export class SupabaseStorageService {
     questionText: string
   ): Promise<StorageUploadResponse> {
     try {
-      console.log('📝 Enviando transcrição para Supabase Storage...')
+      console.log('📝 Enviando transcrição REAL para Supabase Storage...')
+
+      // Garantir que o bucket existe
+      await this.ensureBucketExists()
 
       const userFolderPath = this.getUserFolderPath(userEmail)
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -160,7 +201,10 @@ Gerado automaticamente pelo DNA UP Platform
     userEmail: string
   ): Promise<StorageUploadResponse> {
     try {
-      console.log('🤖 Enviando dataset de fine-tuning para Supabase Storage...')
+      console.log('🤖 Enviando dataset de fine-tuning REAL para Supabase Storage...')
+
+      // Garantir que o bucket existe
+      await this.ensureBucketExists()
 
       const userFolderPath = this.getUserFolderPath(userEmail)
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -173,6 +217,7 @@ Gerado automaticamente pelo DNA UP Platform
       const blob = new Blob([jsonlContent], { type: 'application/jsonl' })
 
       console.log('📤 Fazendo upload do dataset para:', filePath)
+      console.log('📊 Dataset contém:', dataset.length, 'exemplos')
 
       const { data, error } = await supabase.storage
         .from(this.config.bucketName)
@@ -216,7 +261,10 @@ Gerado automaticamente pelo DNA UP Platform
     responses: any[]
   ): Promise<StorageUploadResponse> {
     try {
-      console.log('📊 Gerando relatório final completo...')
+      console.log('📊 Gerando relatório final REAL completo...')
+
+      // Garantir que o bucket existe
+      await this.ensureBucketExists()
 
       const userFolderPath = this.getUserFolderPath(userEmail)
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -341,7 +389,9 @@ ${responses.map((response, i) => `
     return {
       hasBucketName: !!this.config.bucketName,
       hasBaseUrl: !!this.config.baseUrl,
-      isConfigured: this.isConfigured()
+      isConfigured: this.isConfigured(),
+      bucketName: this.config.bucketName,
+      baseUrl: this.config.baseUrl?.substring(0, 30) + '...'
     }
   }
 
@@ -404,4 +454,3 @@ ${responses.map((response, i) => `
 
 // Instância singleton
 export const supabaseStorageService = new SupabaseStorageService()
-

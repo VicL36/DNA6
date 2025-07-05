@@ -1,5 +1,6 @@
 // Serviço REAL de Supabase Storage - DNA UP Platform - CORRIGIDO FINAL
-import { supabase } from '@/lib/supabase'
+import { supabase } from "@/lib/supabase";
+import { jsPDF } from "jspdf";
 
 export interface SupabaseStorageConfig {
   bucketName: string
@@ -118,31 +119,30 @@ export class SupabaseStorageService {
 
       const userFolderPath = this.getUserFolderPath(userEmail)
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-      const fileName = `Q${questionIndex.toString().padStart(3, '0')}_TRANSCRICAO_${timestamp}.txt`
+      const fileName = `Q${questionIndex.toString().padStart(3, '0')}_TRANSCRICAO_${timestamp}.pdf`
       const filePath = `${userFolderPath}/transcriptions/${fileName}`
       
-      const content = `DNA UP - Análise Narrativa Profunda
-Data: ${new Date().toLocaleString('pt-BR')}
-Usuário: ${userEmail}
-Pergunta ${questionIndex}: ${questionText}
+      const doc = new jsPDF();
+      doc.setFontSize(12);
+      doc.text(`DNA UP - Análise Narrativa Profunda`, 10, 10);
+      doc.text(`Data: ${new Date().toLocaleString('pt-BR')}`, 10, 20);
+      doc.text(`Usuário: ${userEmail}`, 10, 30);
+      doc.text(`Pergunta ${questionIndex}: ${questionText}`, 10, 40);
+      doc.text(`TRANSCRIÇÃO:`, 10, 50);
+      doc.text(transcription, 10, 60, { maxWidth: 190 });
+      doc.text(`---`, 10, doc.internal.pageSize.height - 30);
+      doc.text(`Gerado automaticamente pelo DNA UP Platform`, 10, doc.internal.pageSize.height - 20);
 
-TRANSCRIÇÃO:
-${transcription}
+      const pdfBlob = doc.output('blob');
 
----
-Gerado automaticamente pelo DNA UP Platform
-`
-
-      const blob = new Blob([content], { type: 'text/plain; charset=utf-8' })
-
-      console.log('📤 Fazendo upload da transcrição para:', filePath)
+      console.log('📤 Fazendo upload da transcrição PDF para:', filePath)
 
       const { data, error } = await supabase.storage
         .from(this.config.bucketName)
-        .upload(filePath, blob, {
+        .upload(filePath, pdfBlob, {
           cacheControl: '3600',
           upsert: false,
-          contentType: 'text/plain'
+          contentType: 'application/pdf'
         })
 
       if (error) {
@@ -252,85 +252,95 @@ Gerado automaticamente pelo DNA UP Platform
 
       const userFolderPath = this.getUserFolderPath(userEmail)
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-      const fileName = `DNA_UP_RELATORIO_COMPLETO_${timestamp}.txt`
+      const fileName = `DNA_UP_RELATORIO_COMPLETO_${timestamp}.pdf`
       const filePath = `${userFolderPath}/reports/${fileName}`
       
-      const content = `
-# DNA UP - RELATÓRIO DE ANÁLISE PSICOLÓGICA COMPLETA
+      const doc = new jsPDF();
+      doc.setFontSize(12);
+      
+      const addText = (text: string, x: number, y: number, maxWidth: number) => {
+        const lines = doc.splitTextToSize(text, maxWidth);
+        doc.text(lines, x, y);
+        return lines.length * 10; // Approximate line height
+      };
 
-**Data:** ${new Date().toLocaleString('pt-BR')}
-**Usuário:** ${userEmail}
-**Total de Respostas:** ${responses.length}
-**Protocolo:** Clara R. - 108 Perguntas Estratégicas
+      let yOffset = 10;
 
----
+      doc.text(`DNA UP - RELATÓRIO DE ANÁLISE PSICOLÓGICA COMPLETA`, 10, yOffset);
+      yOffset += 10;
+      doc.text(`Data: ${new Date().toLocaleString("pt-BR")}`, 10, yOffset);
+      yOffset += 10;
+      doc.text(`Usuário: ${userEmail}`, 10, yOffset);
+      yOffset += 10;
+      doc.text(`Total de Respostas: ${responses.length}`, 10, yOffset);
+      yOffset += 10;
+      doc.text(`Protocolo: Clara R. - 108 Perguntas Estratégicas`, 10, yOffset);
+      yOffset += 20;
 
-## ANÁLISE PSICOLÓGICA
+      doc.text(`ANÁLISE PSICOLÓGICA`, 10, yOffset);
+      yOffset += 10;
+      yOffset += addText(analysisData.analysis_document || "Análise em processamento...", 10, yOffset, 190);
+      yOffset += 10;
 
-${analysisData.analysis_document || 'Análise em processamento...'}
+      doc.text(`RESUMO EXECUTIVO`, 10, yOffset);
+      yOffset += 10;
+      yOffset += addText(analysisData.personality_summary || "Resumo em processamento...", 10, yOffset, 190);
+      yOffset += 10;
 
----
+      doc.text(`INSIGHTS PRINCIPAIS`, 10, yOffset);
+      yOffset += 10;
+      yOffset += addText(analysisData.key_insights?.map((insight: any, i: number) => `${i + 1}. ${insight}`).join("\n") || "Insights em processamento...", 10, yOffset, 190);
+      yOffset += 10;
 
-## RESUMO EXECUTIVO
+      doc.text(`PADRÕES COMPORTAMENTAIS`, 10, yOffset);
+      yOffset += 10;
+      yOffset += addText(analysisData.behavioral_patterns?.map((pattern: any, i: number) => `${i + 1}. ${pattern}`).join("\n") || "Padrões em processamento...", 10, yOffset, 190);
+      yOffset += 10;
 
-${analysisData.personality_summary || 'Resumo em processamento...'}
+      doc.text(`RECOMENDAÇÕES`, 10, yOffset);
+      yOffset += 10;
+      yOffset += addText(analysisData.recommendations || "Recomendações em processamento...", 10, yOffset, 190);
+      yOffset += 10;
 
----
+      doc.text(`ANÁLISE POR DOMÍNIO`, 10, yOffset);
+      yOffset += 10;
+      yOffset += addText(Object.entries(analysisData.domain_analysis || {}).map(([domain, score]) => `**${domain}:** ${score}`).join("\n"), 10, yOffset, 190);
+      yOffset += 10;
 
-## INSIGHTS PRINCIPAIS
+      doc.addPage();
+      yOffset = 10;
+      doc.text(`RESPOSTAS DETALHADAS`, 10, yOffset);
+      yOffset += 10;
 
-${analysisData.key_insights?.map((insight, i) => `${i + 1}. ${insight}`).join('\n') || 'Insights em processamento...'}
+      responses.forEach((response: any, i: number) => {
+        if (yOffset > doc.internal.pageSize.height - 50) {
+          doc.addPage();
+          yOffset = 10;
+        }
+        doc.text(`PERGUNTA ${response.question_index}`, 10, yOffset);
+        yOffset += 10;
+        doc.text(`Domínio: ${response.question_domain}`, 10, yOffset);
+        yOffset += 10;
+        doc.text(`Pergunta: ${response.question_text}`, 10, yOffset);
+        yOffset += 10;
+        yOffset += addText(`Resposta: ${response.transcript_text || "Transcrição não disponível"}`, 10, yOffset, 190);
+        yOffset += 10;
+        doc.text(`Duração: ${Math.round(response.audio_duration || 0)}s`, 10, yOffset);
+        yOffset += 10;
+        doc.text(`Data: ${new Date(response.created_at).toLocaleString("pt-BR")}`, 10, yOffset);
+        yOffset += 20;
+      });
 
----
+      const pdfBlob = doc.output("blob");
 
-## PADRÕES COMPORTAMENTAIS
-
-${analysisData.behavioral_patterns?.map((pattern, i) => `${i + 1}. ${pattern}`).join('\n') || 'Padrões em processamento...'}
-
----
-
-## RECOMENDAÇÕES
-
-${analysisData.recommendations || 'Recomendações em processamento...'}
-
----
-
-## ANÁLISE POR DOMÍNIO
-
-${Object.entries(analysisData.domain_analysis || {}).map(([domain, score]) => `**${domain}:** ${score}`).join('\n')}
-
----
-
-## RESPOSTAS DETALHADAS
-
-${responses.map((response, i) => `
-### PERGUNTA ${response.question_index}
-**Domínio:** ${response.question_domain}
-**Pergunta:** ${response.question_text}
-**Resposta:** ${response.transcript_text || 'Transcrição não disponível'}
-**Duração:** ${Math.round(response.audio_duration || 0)}s
-**Data:** ${new Date(response.created_at).toLocaleString('pt-BR')}
-
----
-`).join('\n')}
-
----
-
-**Relatório gerado automaticamente pelo DNA UP Platform**
-**Deep Narrative Analysis - Protocolo Clara R.**
-**© 2024 DNA UP - Todos os direitos reservados**
-`
-
-      const blob = new Blob([content], { type: 'text/plain; charset=utf-8' })
-
-      console.log('📤 Fazendo upload do relatório final para:', filePath)
+      console.log("📤 Fazendo upload do relatório final PDF para:", filePath)
 
       const { data, error } = await supabase.storage
         .from(this.config.bucketName)
-        .upload(filePath, blob, {
-          cacheControl: '3600',
+        .upload(filePath, pdfBlob, {
+          cacheControl: "3600",
           upsert: false,
-          contentType: 'text/plain'
+          contentType: "application/pdf"
         })
 
       if (error) {

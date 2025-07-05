@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 
 interface Session {
   id: string;
-  created_date: string;
+  created_at: string; // CORRIGIDO: usar created_at em vez de created_date
   status: string;
   current_question: number;
   total_questions: number;
@@ -97,7 +97,7 @@ export default function SessionCard({ session, responses, onSelect, index }: Ses
                 <div className="flex items-center gap-4 text-sm text-text-secondary">
                   <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    {format(new Date(session.created_date), 'dd/MM/yyyy HH:mm')}
+                    {format(new Date(session.created_at), 'dd/MM/yyyy HH:mm')}
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />

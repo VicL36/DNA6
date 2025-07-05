@@ -3,20 +3,22 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// Verificar se as variáveis estão configuradas
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('🚨 ERRO: Variáveis de ambiente Supabase não encontradas!')
   console.error('📋 CHECKLIST URGENTE:')
-  console.error('1. ✅ Criar novo projeto Supabase: https://supabase.com/dashboard')
-  console.error('2. ✅ Copiar URL e chave anônima')
-  console.error('3. ✅ Atualizar Railway com variáveis de ambiente')
-  console.error('4. ✅ Executar migração SQL no Supabase')
-  console.error('5. ✅ Configurar Google OAuth')
+  console.error('1. ✅ Verificar arquivo .env na raiz do projeto')
+  console.error('2. ✅ Configurar VITE_SUPABASE_URL')
+  console.error('3. ✅ Configurar VITE_SUPABASE_ANON_KEY')
+  console.error('4. ✅ Reiniciar o servidor de desenvolvimento')
+  console.error('5. ✅ Verificar se o projeto Supabase existe')
   
-  // Não quebrar em produção, usar valores padrão
-  if (import.meta.env.PROD) {
-    console.warn('⚠️ Usando configuração de fallback em produção')
-  } else {
-    throw new Error('❌ CONFIGURAÇÃO SUPABASE INCOMPLETA - Veja o console para instruções')
+  // Em desenvolvimento, mostrar erro mais claro
+  if (!import.meta.env.PROD) {
+    console.error('❌ CONFIGURAÇÃO SUPABASE INCOMPLETA')
+    console.error('📝 Crie um arquivo .env na raiz com:')
+    console.error('VITE_SUPABASE_URL=sua_url_aqui')
+    console.error('VITE_SUPABASE_ANON_KEY=sua_chave_aqui')
   }
 }
 

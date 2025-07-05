@@ -1,410 +1,462 @@
-import { supabase } from './supabase';
-import { generateVoiceCloningFile } from './voiceCloning';
-import { generateReportPDF, generateTranscriptionPDF } from './pdfGenerator';
-import { FineTuningDatasetGenerator } from '../integrations/FineTuningDatasetGenerator';
+// Serviço REAL de Supabase Storage - DNA UP Platform - CORRIGIDO FINAL
+import { supabase } from '@/lib/supabase'
 
-// Interface para dados completos da sessão
-interface SessionData {
-  sessionId: string;
-  userEmail: string;
-  userName?: string;
-  responses: any[];
-  analysisData: any;
-  createdAt: string;
-  completedAt?: string;
+export interface SupabaseStorageConfig {
+  bucketName: string
+  baseUrl: string
 }
 
-// Interface para resposta de processamento completo
-interface ProcessingResponse {
-  success: boolean;
-  results?: {
-    reportPdfUrl?: string;
-    transcriptionPdfUrl?: string;
-    clonedVoiceRequestFilePaths?: string[];
-    fineTuningDataset?: any[];
-  };
-  errors?: string[];
+export interface StorageUploadResponse {
+  fileId: string
+  fileName: string
+  fileUrl: string
+  publicUrl: string
+  downloadUrl: string
 }
 
-class SupabaseIntegrationService {
-  
-  /**
-   * Processa uma sessão completa: gera PDFs, clona vozes e cria dataset
-   */
-  async processCompleteSession(sessionId: string): Promise<ProcessingResponse> {
-    try {
-      console.log(`🔄 Iniciando processamento completo da sessão: ${sessionId}`);
-      
-      const errors: string[] = [];
-      const results: any = {};
-      
-      // 1. Buscar dados da sessão
-      const sessionData = await this.getSessionData(sessionId);
-      if (!sessionData) {
-        throw new Error('Sessão não encontrada');
-      }
-      
-      // 2. Gerar relatório em PDF
-      try {
-        console.log('📄 Gerando relatório PDF...');
-        const reportResult = await generateReportPDF(sessionData);
-        if (reportResult.success) {
-          results.reportPdfUrl = reportResult.pdfUrl;
-          console.log('✅ Relatório PDF gerado com sucesso');
-        } else {
-          errors.push(`Erro no relatório PDF: ${reportResult.error}`);
-        }
-      } catch (error) {
-        errors.push(`Erro no relatório PDF: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-      }
-      
-      // 3. Gerar transcrição em PDF
-      try {
-        console.log('📝 Gerando transcrição PDF...');
-        const transcriptionResult = await generateTranscriptionPDF({
-          sessionId: sessionData.sessionId,
-          userEmail: sessionData.userEmail,
-          responses: sessionData.responses,
-          createdAt: sessionData.createdAt
-        });
-        if (transcriptionResult.success) {
-          results.transcriptionPdfUrl = transcriptionResult.pdfUrl;
-          console.log('✅ Transcrição PDF gerada com sucesso');
-        } else {
-          errors.push(`Erro na transcrição PDF: ${transcriptionResult.error}`);
-        }
-      } catch (error) {
-        errors.push(`Erro na transcrição PDF: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-      }
-      
-      // 4. Gerar arquivos de requisição para clonagem de vozes
-      try {
-        console.log("🎤 Iniciando geração de arquivos de requisição para clonagem de vozes...");
-        const cloningRequestFiles = await FineTuningDatasetGenerator.generateVoiceCloningData(
-          sessionData.responses,
-          sessionData.userEmail,
-          sessionData.sessionId
-        );
-        
-        if (cloningRequestFiles.length > 0) {
-          results.clonedVoiceRequestFilePaths = cloningRequestFiles.map(req => req.request_file_path);
-          console.log(`✅ ${cloningRequestFiles.length} arquivos de requisição de clonagem de voz gerados com sucesso`);
-        } else {
-          errors.push("Nenhum arquivo de requisição de clonagem de voz foi gerado");
-        }
-      } catch (error) {
-        errors.push(`Erro na geração de arquivos de requisição de clonagem de vozes: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
-      }
-      
-      // 5. Gerar dataset de fine-tuning
-      try {
-        console.log('🤖 Gerando dataset de fine-tuning...');
-        const dataset = FineTuningDatasetGenerator.generateDataset(
-          sessionData.userEmail,
-          sessionData.responses,
-          sessionData.analysisData
-        );
-        
-        // Salvar dataset no Supabase Storage
-        const datasetBlob = new Blob([JSON.stringify(dataset, null, 2)], { type: 'application/json' });
-        const datasetPath = `datasets/${sessionData.userEmail.replace(/[@.]/g, '_')}/dataset-${sessionId}-${Date.now()}.json`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('dna-protocol-files')
-          .upload(datasetPath, datasetBlob, {
-            contentType: 'application/json',
-            upsert: false
-          });
-        
-        if (uploadError) {
-          throw uploadError;
-        }
-        
-        // Obter URL pública
-        const { data: urlData } = supabase.storage
-          .from('dna-protocol-files')
-          .getPublicUrl(datasetPath);
-        
-        results.fineTuningDataset = dataset;
-        results.datasetUrl = urlData.publicUrl;
-        
-        // Atualizar sessão com URL do dataset
-        await this.updateSessionWithDataset(sessionId, urlData.publicUrl);
-        
-        console.log('✅ Dataset de fine-tuning gerado com sucesso');
-      } catch (error) {
-        errors.push(`Erro no dataset: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-      }
-      
-      // 6. Atualizar status da sessão
-      await this.updateSessionStatus(sessionId, 'completed');
-      
-      console.log(`🎉 Processamento da sessão ${sessionId} concluído`);
-      console.log(`✅ Sucessos: ${Object.keys(results).length}`);
-      console.log(`❌ Erros: ${errors.length}`);
-      
-      return {
-        success: errors.length === 0,
-        results,
-        errors: errors.length > 0 ? errors : undefined
-      };
-      
-    } catch (error) {
-      console.error('❌ Erro no processamento completo:', error);
-      return {
-        success: false,
-        errors: [error instanceof Error ? error.message : 'Erro desconhecido no processamento']
-      };
+export class SupabaseStorageService {
+  private config: SupabaseStorageConfig
+
+  constructor() {
+    this.config = {
+      bucketName: 'dna-protocol-files', // Bucket fixo criado via SQL
+      baseUrl: import.meta.env.VITE_SUPABASE_URL || ''
     }
+
+    console.log('🔧 Configurando Supabase Storage Service...')
+    console.log('🪣 Bucket Name:', this.config.bucketName)
+    console.log('🔗 Base URL:', this.config.baseUrl?.substring(0, 30) + '...')
   }
-  
-  /**
-   * Busca dados completos da sessão
-   */
-  private async getSessionData(sessionId: string): Promise<SessionData | null> {
+
+  // Verificar se o bucket existe (não criar, apenas verificar)
+  private async checkBucketExists(): Promise<boolean> {
     try {
-      // Buscar dados da sessão
-      const { data: session, error: sessionError } = await supabase
-        .from('analysis_sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .single();
-      
-      if (sessionError || !session) {
-        console.error('Erro ao buscar sessão:', sessionError);
-        return null;
-      }
-      
-      // Buscar respostas da sessão
-      const { data: responses, error: responsesError } = await supabase
-        .from('user_responses')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('question_index', { ascending: true });
-      
-      if (responsesError) {
-        console.error('Erro ao buscar respostas:', responsesError);
-        return null;
-      }
-      
-      return {
-        sessionId: session.id,
-        userEmail: session.user_email,
-        userName: session.user_name,
-        responses: responses || [],
-        analysisData: {
-          final_synthesis: session.final_synthesis,
-          progress_percentage: session.progress_percentage,
-          total_questions: session.total_questions
-        },
-        createdAt: session.created_at,
-        completedAt: session.updated_at
-      };
-      
-    } catch (error) {
-      console.error('Erro ao buscar dados da sessão:', error);
-      return null;
-    }
-  }
-  
-  /**
-   * Atualiza o status da sessão
-   */
-  private async updateSessionStatus(sessionId: string, status: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('analysis_sessions')
-        .update({ 
-          status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', sessionId);
+      const { data: buckets, error } = await supabase.storage.listBuckets()
       
       if (error) {
-        console.error('Erro ao atualizar status da sessão:', error);
-        return false;
+        console.error('❌ Erro ao verificar buckets:', error)
+        return false
       }
+
+      const bucketExists = buckets?.some(bucket => bucket.name === this.config.bucketName)
       
-      return true;
-    } catch (error) {
-      console.error('Erro ao atualizar status:', error);
-      return false;
-    }
-  }
-  
-  /**
-   * Atualiza a sessão com URL do dataset
-   */
-  private async updateSessionWithDataset(sessionId: string, datasetUrl: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('analysis_sessions')
-        .update({ 
-          dataset_url: datasetUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', sessionId);
-      
-      if (error) {
-        console.error('Erro ao atualizar sessão com dataset:', error);
-        return false;
+      if (bucketExists) {
+        console.log('✅ Bucket existe:', this.config.bucketName)
+        return true
+      } else {
+        console.error('❌ Bucket não existe:', this.config.bucketName)
+        console.error('🔧 Execute a migração SQL: supabase/migrations/20250630020001_fix_storage_setup.sql')
+        return false
       }
-      
-      return true;
     } catch (error) {
-      console.error('Erro ao atualizar dataset:', error);
-      return false;
+      console.error('❌ Erro ao verificar bucket:', error)
+      return false
     }
   }
-  
-  /**
-   * Lista todas as sessões de um usuário
-   */
-  async getUserSessions(userEmail: string): Promise<any[]> {
+
+  // Criar pasta para o usuário (estrutura de pastas no Storage)
+  private getUserFolderPath(userEmail: string): string {
+    const sanitizedEmail = userEmail.replace('@', '_').replace(/\./g, '_')
+    return `users/${sanitizedEmail}`
+  }
+
+  // Upload de arquivo de áudio
+  async uploadAudioFile(
+    file: File, 
+    userEmail: string, 
+    questionIndex: number,
+    questionText: string
+  ): Promise<StorageUploadResponse> {
     try {
-      const { data, error } = await supabase
-        .from('analysis_sessions')
-        .select('*')
-        .eq('user_email', userEmail)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Erro ao buscar sessões do usuário:', error);
-        return [];
+      console.log('🎵 Iniciando upload REAL de áudio para Supabase Storage...')
+      console.log('📄 Arquivo:', file.name, 'Tamanho:', file.size, 'bytes')
+
+      // Verificar se o bucket existe
+      const bucketExists = await this.checkBucketExists()
+      if (!bucketExists) {
+        throw new Error('Bucket não configurado. Execute a migração SQL primeiro.')
       }
-      
-      return data || [];
-    } catch (error) {
-      console.error('Erro ao buscar sessões:', error);
-      return [];
-    }
-  }
-  
-  /**
-   * Busca arquivos de uma sessão no Storage
-   */
-  async getSessionFiles(sessionId: string, userEmail: string): Promise<{
-    reports: string[];
-    transcriptions: string[];
-    voiceClones: string[];
-    datasets: string[];
-  }> {
-    try {
-      const userFolder = userEmail.replace(/[@.]/g, '_');
-      
-      // Buscar arquivos por tipo
-      const [reports, transcriptions, voiceClones, datasets] = await Promise.all([
-        this.listFilesInFolder(`reports/${userFolder}`),
-        this.listFilesInFolder(`transcriptions/${userFolder}`),
-        this.listFilesInFolder(`voice-cloning/${userFolder}`),
-        this.listFilesInFolder(`datasets/${userFolder}`)
-      ]);
-      
-      // Filtrar por sessionId
-      const sessionFilter = (files: any[]) => 
-        files.filter(file => file.name.includes(sessionId));
-      
-      return {
-        reports: sessionFilter(reports),
-        transcriptions: sessionFilter(transcriptions),
-        voiceClones: sessionFilter(voiceClones),
-        datasets: sessionFilter(datasets)
-      };
-      
-    } catch (error) {
-      console.error('Erro ao buscar arquivos da sessão:', error);
-      return {
-        reports: [],
-        transcriptions: [],
-        voiceClones: [],
-        datasets: []
-      };
-    }
-  }
-  
-  /**
-   * Lista arquivos em uma pasta do Storage
-   */
-  private async listFilesInFolder(folderPath: string): Promise<any[]> {
-    try {
+
+      const userFolderPath = this.getUserFolderPath(userEmail)
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const fileName = `Q${questionIndex.toString().padStart(3, '0')}_AUDIO_${timestamp}.wav`
+      const filePath = `${userFolderPath}/audio/${fileName}`
+
+      console.log('📤 Fazendo upload do áudio para:', filePath)
+
       const { data, error } = await supabase.storage
-        .from('dna-protocol-files')
-        .list(folderPath);
-      
+        .from(this.config.bucketName)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type || 'audio/wav'
+        })
+
       if (error) {
-        console.error(`Erro ao listar arquivos em ${folderPath}:`, error);
-        return [];
+        console.error('❌ Erro no upload do áudio:', error)
+        throw new Error(`Erro no upload do áudio: ${error.message}`)
       }
-      
-      return data || [];
+
+      // Obter URL pública do arquivo
+      const { data: publicUrlData } = supabase.storage
+        .from(this.config.bucketName)
+        .getPublicUrl(filePath)
+
+      console.log('✅ Áudio enviado com sucesso para Supabase Storage!')
+      console.log('📁 Path:', data.path)
+      console.log('🔗 URL:', publicUrlData.publicUrl)
+
+      return {
+        fileId: data.path,
+        fileName: fileName,
+        fileUrl: publicUrlData.publicUrl,
+        publicUrl: publicUrlData.publicUrl,
+        downloadUrl: publicUrlData.publicUrl
+      }
+
     } catch (error) {
-      console.error('Erro ao listar arquivos:', error);
-      return [];
+      console.error('❌ Erro no upload do áudio:', error)
+      throw new Error(`Falha no upload do áudio: ${error.message}`)
     }
   }
-  
-  /**
-   * Remove simulados (dados de teste) do banco
-   */
-  async removeSimulatedData(): Promise<boolean> {
+
+  // Upload de transcrição
+  async uploadTranscription(
+    transcription: string,
+    userEmail: string,
+    questionIndex: number,
+    questionText: string
+  ): Promise<StorageUploadResponse> {
     try {
-      console.log('🧹 Removendo dados simulados...');
-      
-      // Identificar sessões de teste (podem ter emails específicos ou padrões)
-      const testPatterns = ['test@', 'demo@', 'simulado@', 'exemplo@'];
-      
-      for (const pattern of testPatterns) {
-        // Remover respostas de teste
-        const { error: responsesError } = await supabase
-          .from('user_responses')
-          .delete()
-          .like('session_id', `%${pattern}%`);
-        
-        if (responsesError) {
-          console.error(`Erro ao remover respostas de teste (${pattern}):`, responsesError);
-        }
-        
-        // Remover sessões de teste
-        const { error: sessionsError } = await supabase
-          .from('analysis_sessions')
-          .delete()
-          .like('user_email', `${pattern}%`);
-        
-        if (sessionsError) {
-          console.error(`Erro ao remover sessões de teste (${pattern}):`, sessionsError);
-        }
+      console.log('📝 Enviando transcrição REAL para Supabase Storage...')
+
+      // Verificar se o bucket existe
+      const bucketExists = await this.checkBucketExists()
+      if (!bucketExists) {
+        throw new Error('Bucket não configurado. Execute a migração SQL primeiro.')
       }
+
+      const userFolderPath = this.getUserFolderPath(userEmail)
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const fileName = `Q${questionIndex.toString().padStart(3, '0')}_TRANSCRICAO_${timestamp}.txt`
+      const filePath = `${userFolderPath}/transcriptions/${fileName}`
       
-      console.log('✅ Dados simulados removidos');
-      return true;
-      
+      const content = `DNA UP - Análise Narrativa Profunda
+Data: ${new Date().toLocaleString('pt-BR')}
+Usuário: ${userEmail}
+Pergunta ${questionIndex}: ${questionText}
+
+TRANSCRIÇÃO:
+${transcription}
+
+---
+Gerado automaticamente pelo DNA UP Platform
+`
+
+      const blob = new Blob([content], { type: 'text/plain; charset=utf-8' })
+
+      console.log('📤 Fazendo upload da transcrição para:', filePath)
+
+      const { data, error } = await supabase.storage
+        .from(this.config.bucketName)
+        .upload(filePath, blob, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: 'text/plain'
+        })
+
+      if (error) {
+        console.error('❌ Erro no upload da transcrição:', error)
+        throw new Error(`Erro no upload da transcrição: ${error.message}`)
+      }
+
+      // Obter URL pública do arquivo
+      const { data: publicUrlData } = supabase.storage
+        .from(this.config.bucketName)
+        .getPublicUrl(filePath)
+
+      console.log('✅ Transcrição enviada com sucesso para Supabase Storage!')
+      console.log('📁 Path:', data.path)
+
+      return {
+        fileId: data.path,
+        fileName: fileName,
+        fileUrl: publicUrlData.publicUrl,
+        publicUrl: publicUrlData.publicUrl,
+        downloadUrl: publicUrlData.publicUrl
+      }
+
     } catch (error) {
-      console.error('❌ Erro ao remover dados simulados:', error);
-      return false;
+      console.error('❌ Erro ao enviar transcrição:', error)
+      throw new Error(`Falha no upload da transcrição: ${error.message}`)
+    }
+  }
+
+  // Upload do dataset de fine-tuning
+  async uploadFineTuningDataset(
+    dataset: any,
+    userEmail: string
+  ): Promise<StorageUploadResponse> {
+    try {
+      console.log('🤖 Enviando dataset de fine-tuning REAL para Supabase Storage...')
+
+      // Verificar se o bucket existe
+      const bucketExists = await this.checkBucketExists()
+      if (!bucketExists) {
+        throw new Error('Bucket não configurado. Execute a migração SQL primeiro.')
+      }
+
+      const userFolderPath = this.getUserFolderPath(userEmail)
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const fileName = `DNA_UP_FINE_TUNING_DATASET_${timestamp}.jsonl`
+      const filePath = `${userFolderPath}/datasets/${fileName}`
+      
+      // Converter dataset para formato JSONL (cada linha é um JSON)
+      const jsonlContent = dataset.map(item => JSON.stringify(item)).join('\n')
+
+      const blob = new Blob([jsonlContent], { type: 'application/jsonl' })
+
+      console.log('📤 Fazendo upload do dataset para:', filePath)
+      console.log('📊 Dataset contém:', dataset.length, 'exemplos')
+
+      const { data, error } = await supabase.storage
+        .from(this.config.bucketName)
+        .upload(filePath, blob, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: 'application/jsonl'
+        })
+
+      if (error) {
+        console.error('❌ Erro no upload do dataset:', error)
+        throw new Error(`Erro no upload do dataset: ${error.message}`)
+      }
+
+      // Obter URL pública do arquivo
+      const { data: publicUrlData } = supabase.storage
+        .from(this.config.bucketName)
+        .getPublicUrl(filePath)
+
+      console.log('✅ Dataset de fine-tuning enviado com sucesso!')
+      console.log('📁 Path:', data.path)
+      console.log('🔗 URL:', publicUrlData.publicUrl)
+
+      return {
+        fileId: data.path,
+        fileName: fileName,
+        fileUrl: publicUrlData.publicUrl,
+        publicUrl: publicUrlData.publicUrl,
+        downloadUrl: publicUrlData.publicUrl
+      }
+
+    } catch (error) {
+      console.error('❌ Erro ao enviar dataset:', error)
+      throw new Error(`Falha no upload do dataset: ${error.message}`)
+    }
+  }
+
+  // Upload do relatório final
+  async uploadFinalReport(
+    userEmail: string,
+    analysisData: any,
+    responses: any[]
+  ): Promise<StorageUploadResponse> {
+    try {
+      console.log('📊 Gerando relatório final REAL completo...')
+
+      // Verificar se o bucket existe
+      const bucketExists = await this.checkBucketExists()
+      if (!bucketExists) {
+        throw new Error('Bucket não configurado. Execute a migração SQL primeiro.')
+      }
+
+      const userFolderPath = this.getUserFolderPath(userEmail)
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const fileName = `DNA_UP_RELATORIO_COMPLETO_${timestamp}.txt`
+      const filePath = `${userFolderPath}/reports/${fileName}`
+      
+      const content = `
+# DNA UP - RELATÓRIO DE ANÁLISE PSICOLÓGICA COMPLETA
+
+**Data:** ${new Date().toLocaleString('pt-BR')}
+**Usuário:** ${userEmail}
+**Total de Respostas:** ${responses.length}
+**Protocolo:** Clara R. - 108 Perguntas Estratégicas
+
+---
+
+## ANÁLISE PSICOLÓGICA
+
+${analysisData.analysis_document || 'Análise em processamento...'}
+
+---
+
+## RESUMO EXECUTIVO
+
+${analysisData.personality_summary || 'Resumo em processamento...'}
+
+---
+
+## INSIGHTS PRINCIPAIS
+
+${analysisData.key_insights?.map((insight, i) => `${i + 1}. ${insight}`).join('\n') || 'Insights em processamento...'}
+
+---
+
+## PADRÕES COMPORTAMENTAIS
+
+${analysisData.behavioral_patterns?.map((pattern, i) => `${i + 1}. ${pattern}`).join('\n') || 'Padrões em processamento...'}
+
+---
+
+## RECOMENDAÇÕES
+
+${analysisData.recommendations || 'Recomendações em processamento...'}
+
+---
+
+## ANÁLISE POR DOMÍNIO
+
+${Object.entries(analysisData.domain_analysis || {}).map(([domain, score]) => `**${domain}:** ${score}`).join('\n')}
+
+---
+
+## RESPOSTAS DETALHADAS
+
+${responses.map((response, i) => `
+### PERGUNTA ${response.question_index}
+**Domínio:** ${response.question_domain}
+**Pergunta:** ${response.question_text}
+**Resposta:** ${response.transcript_text || 'Transcrição não disponível'}
+**Duração:** ${Math.round(response.audio_duration || 0)}s
+**Data:** ${new Date(response.created_at).toLocaleString('pt-BR')}
+
+---
+`).join('\n')}
+
+---
+
+**Relatório gerado automaticamente pelo DNA UP Platform**
+**Deep Narrative Analysis - Protocolo Clara R.**
+**© 2024 DNA UP - Todos os direitos reservados**
+`
+
+      const blob = new Blob([content], { type: 'text/plain; charset=utf-8' })
+
+      console.log('📤 Fazendo upload do relatório final para:', filePath)
+
+      const { data, error } = await supabase.storage
+        .from(this.config.bucketName)
+        .upload(filePath, blob, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: 'text/plain'
+        })
+
+      if (error) {
+        console.error('❌ Erro no upload do relatório:', error)
+        throw new Error(`Erro no upload do relatório: ${error.message}`)
+      }
+
+      // Obter URL pública do arquivo
+      const { data: publicUrlData } = supabase.storage
+        .from(this.config.bucketName)
+        .getPublicUrl(filePath)
+
+      console.log('✅ Relatório final enviado com sucesso!')
+      console.log('📁 Path:', data.path)
+      console.log('🔗 URL:', publicUrlData.publicUrl)
+
+      return {
+        fileId: data.path,
+        fileName: fileName,
+        fileUrl: publicUrlData.publicUrl,
+        publicUrl: publicUrlData.publicUrl,
+        downloadUrl: publicUrlData.publicUrl
+      }
+
+    } catch (error) {
+      console.error('❌ Erro ao gerar relatório final:', error)
+      throw new Error(`Falha ao gerar relatório: ${error.message}`)
+    }
+  }
+
+  // Verificar se está configurado
+  isConfigured(): boolean {
+    return !!(
+      this.config.bucketName &&
+      this.config.baseUrl
+    )
+  }
+
+  // Info de configuração
+  getConfigInfo() {
+    return {
+      hasBucketName: !!this.config.bucketName,
+      hasBaseUrl: !!this.config.baseUrl,
+      isConfigured: this.isConfigured(),
+      bucketName: this.config.bucketName,
+      baseUrl: this.config.baseUrl?.substring(0, 30) + '...'
+    }
+  }
+
+  // Listar arquivos de um usuário
+  async listUserFiles(userEmail: string, folder?: string): Promise<any[]> {
+    try {
+      const userFolderPath = this.getUserFolderPath(userEmail)
+      const searchPath = folder ? `${userFolderPath}/${folder}` : userFolderPath
+
+      const { data, error } = await supabase.storage
+        .from(this.config.bucketName)
+        .list(searchPath)
+
+      if (error) {
+        console.error('❌ Erro ao listar arquivos:', error)
+        return []
+      }
+
+      console.log('✅ Arquivos listados:', data?.length || 0)
+      return data || []
+    } catch (error) {
+      console.error('❌ Erro ao listar arquivos:', error)
+      return []
+    }
+  }
+
+  // Deletar arquivo
+  async deleteFile(filePath: string): Promise<boolean> {
+    try {
+      const { error } = await supabase.storage
+        .from(this.config.bucketName)
+        .remove([filePath])
+
+      if (error) {
+        console.error('❌ Erro ao deletar arquivo:', error)
+        return false
+      }
+
+      console.log('✅ Arquivo deletado com sucesso:', filePath)
+      return true
+    } catch (error) {
+      console.error('❌ Erro ao deletar arquivo:', error)
+      return false
+    }
+  }
+
+  // Obter URL de download de um arquivo
+  async getDownloadUrl(filePath: string): Promise<string | null> {
+    try {
+      const { data } = supabase.storage
+        .from(this.config.bucketName)
+        .getPublicUrl(filePath)
+
+      return data.publicUrl
+    } catch (error) {
+      console.error('❌ Erro ao obter URL de download:', error)
+      return null
     }
   }
 }
 
-// Instância singleton do serviço
-export const supabaseIntegrationService = new SupabaseIntegrationService();
-
-// Funções principais para compatibilidade
-export async function processCompleteSession(sessionId: string): Promise<ProcessingResponse> {
-  return await supabaseIntegrationService.processCompleteSession(sessionId);
-}
-
-export async function getUserSessions(userEmail: string): Promise<any[]> {
-  return await supabaseIntegrationService.getUserSessions(userEmail);
-}
-
-export async function getSessionFiles(sessionId: string, userEmail: string) {
-  return await supabaseIntegrationService.getSessionFiles(sessionId, userEmail);
-}
-
-export async function removeSimulatedData(): Promise<boolean> {
-  return await supabaseIntegrationService.removeSimulatedData();
-}
-
-// Exportar tipos para uso em outros módulos
-export type { SessionData, ProcessingResponse };
-
+// Instância singleton
+export const supabaseStorageService = new SupabaseStorageService()

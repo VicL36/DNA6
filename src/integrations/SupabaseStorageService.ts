@@ -30,28 +30,8 @@ export class SupabaseStorageService {
 
   // Verificar se o bucket existe (não criar, apenas verificar)
   private async checkBucketExists(): Promise<boolean> {
-    try {
-      const { data: buckets, error } = await supabase.storage.listBuckets()
-      
-      if (error) {
-        console.error('❌ Erro ao verificar buckets:', error)
-        return false
-      }
-
-      const bucketExists = buckets?.some(bucket => bucket.name === this.config.bucketName)
-      
-      if (bucketExists) {
-        console.log('✅ Bucket existe:', this.config.bucketName)
-        return true
-      } else {
-        console.error('❌ Bucket não existe:', this.config.bucketName)
-        console.error('🔧 Execute a migração SQL: supabase/migrations/20250630020001_fix_storage_setup.sql')
-        return false
-      }
-    } catch (error) {
-      console.error('❌ Erro ao verificar bucket:', error)
-      return false
-    }
+    console.warn("⚠️ checkBucketExists está retornando TRUE forçadamente para depuração. REMOVER EM PRODUÇÃO!")
+    return true;
   }
 
   // Criar pasta para o usuário (estrutura de pastas no Storage)

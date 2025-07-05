@@ -11,7 +11,6 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ["jspdf"],
     exclude: ["lucide-react"],
   },
   server: {

@@ -50,69 +50,10 @@ export default function History() {
       const allResponses = await UserResponse.list('-created_at');
       console.log('✅ Respostas carregadas:', allResponses.length)
       setResponses(allResponses);
-      
     } catch (error) {
       console.error("❌ Erro ao carregar histórico:", error);
-      
-      // Fallback com dados simulados REALISTAS se houver erro
-      console.log('🔄 Usando dados simulados para histórico...')
-      
-      const mockSessions = [
-        {
-          id: 'session_1',
-          created_at: new Date(Date.now() - 86400000).toISOString(), // 1 dia atrás
-          user_email: currentUser?.email || 'user@example.com',
-          status: 'completed',
-          current_question: 108,
-          total_questions: 108,
-          progress_percentage: 100,
-          final_synthesis: 'Análise completa realizada com sucesso'
-        },
-        {
-          id: 'session_2', 
-          created_at: new Date(Date.now() - 172800000).toISOString(), // 2 dias atrás
-          user_email: currentUser?.email || 'user@example.com',
-          status: 'active',
-          current_question: 45,
-          total_questions: 108,
-          progress_percentage: 42,
-          final_synthesis: null
-        }
-      ]
-      
-      const mockResponses = [
-        {
-          id: 'response_1',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          session_id: 'session_1',
-          question_index: 1,
-          question_text: 'Quem é você além dos crachás que carrega?',
-          question_domain: 'Identidade & Narrativa',
-          transcript_text: 'Essa pergunta me faz refletir sobre quem eu realmente sou além dos papéis que desempenho no dia a dia. Acredito que sou uma pessoa que busca constantemente crescimento pessoal e conexões genuínas com outras pessoas.',
-          audio_duration: 45,
-          audio_file_url: 'https://example.com/audio1.wav',
-          analysis_keywords: ['reflexão', 'crescimento', 'autenticidade'],
-          sentiment_score: 0.8,
-          emotional_tone: 'reflexivo'
-        },
-        {
-          id: 'response_2',
-          created_at: new Date(Date.now() - 86300000).toISOString(),
-          session_id: 'session_1', 
-          question_index: 2,
-          question_text: 'Se sua vida fosse um livro, qual seria o título atual deste capítulo?',
-          question_domain: 'Identidade & Narrativa',
-          transcript_text: 'Se minha vida fosse um livro, este capítulo se chamaria "Descobrindo Novos Horizontes". É um momento de transição e crescimento, onde estou explorando novas possibilidades e me conhecendo melhor.',
-          audio_duration: 38,
-          audio_file_url: 'https://example.com/audio2.wav',
-          analysis_keywords: ['descoberta', 'transição', 'crescimento'],
-          sentiment_score: 0.9,
-          emotional_tone: 'otimista'
-        }
-      ]
-      
-      setSessions(mockSessions)
-      setResponses(mockResponses)
+      setSessions([]);
+      setResponses([]);
     }
     setIsLoading(false);
   };

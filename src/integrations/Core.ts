@@ -269,13 +269,7 @@ export async function saveTranscriptionToStorage(
 
   } catch (error) {
     console.error('❌ Erro no salvamento REAL da transcrição:', error)
-    const timestamp = Date.now()
-    const mockFileId = `transcription_error_${timestamp}`
-    
-    return {
-      fileId: mockFileId,
-      fileUrl: `https://nzsyuhewavijzszlgshx.supabase.co/storage/v1/object/public/dna-protocol-files/${mockFileId}`
-    }
+    throw error
   }
 }
 
@@ -339,15 +333,7 @@ export async function generateFinalReportAndDataset(
 
   } catch (error) {
     console.error('❌ Erro ao gerar relatório e dataset REAIS:', error)
-    const timestamp = Date.now()
-    
-    return {
-      reportFileId: `report_error_${timestamp}`,
-      reportFileUrl: `https://nzsyuhewavijzszlgshx.supabase.co/storage/v1/object/public/dna-protocol-files/report_error_${timestamp}.txt`,
-      datasetFileId: `dataset_error_${timestamp}`,
-      datasetFileUrl: `https://nzsyuhewavijzszlgshx.supabase.co/storage/v1/object/public/dna-protocol-files/dataset_error_${timestamp}.jsonl`,
-      voiceCloningData: []
-    }
+    throw error
   }
 }
 

@@ -1,5 +1,5 @@
 import { supabase } from "../lib/supabase";
-import { generateVoiceCloningData as cloneVoice, VoiceCloningData as VoiceCloneData } from "../lib/voiceCloning";
+import { generateVoiceCloningFile as cloneVoice, VoiceCloningFileResponse as VoiceCloneData } from "../lib/voiceCloning";
 
 // Gerador de Dataset para Fine-tuning TinyLlama - DNA UP Platform
 export interface FineTuningExample {
